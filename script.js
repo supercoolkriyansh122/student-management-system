@@ -179,12 +179,8 @@ async function renderStudentsList(filteredStudents = null) {
         const dataStatus = document.getElementById('dataStatus');
         const searchBar = document.getElementById('searchBar');
 
-        // Show/hide search bar based on total students
-        if (allStudents.length > 0) {
-            searchBar.style.display = 'block';
-        } else {
-            searchBar.style.display = 'none';
-        }
+        // Search bar is always visible now
+        searchBar.style.display = 'block';
 
         // Update data status
         if (allStudents.length === 0) {
@@ -634,6 +630,18 @@ function setupNavigation() {
     document.getElementById('addStudentBtn').addEventListener('click', () => {
         resetAddStudentForm();
         showView('addStudentView');
+    });
+
+    // Test Animations button
+    document.getElementById('testAnimBtn').addEventListener('click', () => {
+        // Test form animation
+        showView('addStudentView');
+        setTimeout(() => {
+            showView('homeView');
+            setTimeout(() => {
+                showNotification('✅ Animations are working! Check the smooth transitions.', 'success');
+            }, 500);
+        }, 1000);
     });
 
     // Back from Add Student
