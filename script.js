@@ -118,6 +118,18 @@ class StudentManager {
         return student;
     }
 
+    // Update student
+    async updateStudent(id, updatedData) {
+        const index = this.students.findIndex(s => s.id === id);
+        if (index === -1) {
+            throw new Error('Student not found');
+        }
+
+        this.students[index] = { ...this.students[index], ...updatedData, id };
+        this.saveToLocalStorage();
+        return this.students[index];
+    }
+
     // Get student by ID
     getStudent(id) {
         return this.students.find(s => s.id === id);
@@ -179,7 +191,7 @@ async function renderStudentsList(filteredStudents = null) {
         const dataStatus = document.getElementById('dataStatus');
         const searchBar = document.getElementById('searchBar');
 
-        // Search bar is always visible now
+        // Search bar is always visible
         if (searchBar) {
             searchBar.style.display = 'block';
         }
@@ -204,6 +216,7 @@ async function renderStudentsList(filteredStudents = null) {
             emptyState.classList.remove('visible');
             studentsList.innerHTML = students.map(student => `
                 <div class="student-card" data-id="${student.id}">
+                    <button class="student-edit-btn" data-id="${student.id}" title="Edit Student">✏️</button>
                     <div class="student-card-header">
                         <div class="student-avatar">
                             ${student.picture ? 
@@ -233,9 +246,23 @@ async function renderStudentsList(filteredStudents = null) {
                 // Staggered animation delay
                 card.style.animationDelay = `${index * 0.05}s`;
                 
-                card.addEventListener('click', () => {
+                // Add click listener to card (but not edit button)
+                card.addEventListener('click', (e) => {
+                    // Don't trigger if edit button was clicked
+                    if (e.target.closest('.student-edit-btn')) {
+                        return;
+                    }
                     const studentId = card.dataset.id;
                     showStudentProfile(studentId);
+                });
+            });
+
+            // Add click listeners to edit buttons
+            document.querySelectorAll('.student-edit-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation(); // Prevent card click
+                    const studentId = btn.dataset.id;
+                    showEditStudent(studentId);
                 });
             });
         }
@@ -250,10 +277,7 @@ function setupSearchBar() {
     const searchInput = document.getElementById('searchInput');
     const searchResultsInfo = document.getElementById('searchResultsInfo');
     
-    if (!searchInput) {
-        console.error('Search input not found!');
-        return;
-    }
+    if (!searchInput || !searchResultsInfo) return;
     
     searchInput.addEventListener('input', (e) => {
         const searchTerm = e.target.value.toLowerCase().trim();
@@ -262,9 +286,7 @@ function setupSearchBar() {
         if (searchTerm === '') {
             // Show all students
             renderStudentsList();
-            if (searchResultsInfo) {
-                searchResultsInfo.textContent = '';
-            }
+            searchResultsInfo.textContent = '';
             return;
         }
         
@@ -280,9 +302,7 @@ function setupSearchBar() {
         });
         
         // Update search results info
-        if (searchResultsInfo) {
-            searchResultsInfo.textContent = `Found ${filteredStudents.length} student${filteredStudents.length === 1 ? '' : 's'}`;
-        }
+        searchResultsInfo.textContent = `Found ${filteredStudents.length} student${filteredStudents.length === 1 ? '' : 's'}`;
         
         // Render filtered students
         renderStudentsList(filteredStudents);
@@ -325,6 +345,53 @@ function formatDate(dateString) {
         month: 'long', 
         day: 'numeric' 
     });
+}
+
+// Show Edit Student Form
+function showEditStudent(studentId) {
+    const student = studentManager.getStudent(studentId);
+    if (!student) return;
+
+    currentEditingStudentId = studentId;
+
+    // Populate form fields
+    document.getElementById('editStudentId').value = studentId;
+    document.getElementById('editFirstName').value = student.firstName;
+    document.getElementById('editLastName').value = student.lastName;
+    document.getElementById('editRollNo').value = student.rollNo;
+    document.getElementById('editAdmissionNo').value = student.admissionNo;
+    document.getElementById('editClass').value = student.class;
+    document.getElementById('editSection').value = student.section;
+    document.getElementById('editDob').value = student.dob;
+
+    // Handle existing picture
+    if (student.picture) {
+        editImageData = student.picture;
+        const editImagePreview = document.getElementById('editImagePreview');
+        const editDragDropZone = document.getElementById('editDragDropZone');
+        
+        editImagePreview.innerHTML = `
+            <div class="image-preview-container">
+                <img src="${student.picture}" alt="Preview">
+                <button type="button" class="remove-image-btn" id="removeEditImageBtn">×</button>
+            </div>
+        `;
+        editImagePreview.classList.add('visible');
+        editDragDropZone.classList.add('has-image');
+
+        // Add remove button handler
+        document.getElementById('removeEditImageBtn').addEventListener('click', () => {
+            editImageData = null;
+            document.getElementById('editPicture').value = '';
+            editImagePreview.innerHTML = '';
+            editImagePreview.classList.remove('visible');
+            editDragDropZone.classList.remove('has-image');
+        });
+    } else {
+        editImageData = null;
+    }
+
+    showView('editStudentView');
 }
 
 // Form Validation
@@ -413,6 +480,8 @@ class FormValidator {
 
 // Image state management
 let currentImageData = null;
+let editImageData = null;
+let currentEditingStudentId = null;
 
 // Add Student Form Handler
 function setupAddStudentForm() {
@@ -421,15 +490,7 @@ function setupAddStudentForm() {
     const imagePreview = document.getElementById('imagePreview');
     const dragDropZone = document.getElementById('dragDropZone');
 
-    if (!form) {
-        console.error('Add student form not found!');
-        return;
-    }
-
-    if (!dragDropZone) {
-        console.error('Drag drop zone not found!');
-        return;
-    }
+    if (!form || !pictureInput || !imagePreview || !dragDropZone) return;
 
     // Drag and Drop handlers
     dragDropZone.addEventListener('click', () => {
@@ -598,99 +659,275 @@ function resetAddStudentForm() {
     form.querySelectorAll('input, select').forEach(el => el.classList.remove('error'));
 }
 
+// Edit Student Form Handler
+function setupEditStudentForm() {
+    const form = document.getElementById('editStudentForm');
+    const pictureInput = document.getElementById('editPicture');
+    const imagePreview = document.getElementById('editImagePreview');
+    const dragDropZone = document.getElementById('editDragDropZone');
+
+    if (!form || !pictureInput || !imagePreview || !dragDropZone) return;
+
+    // Drag and Drop handlers
+    dragDropZone.addEventListener('click', () => {
+        pictureInput.click();
+    });
+
+    dragDropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dragDropZone.classList.add('drag-over');
+    });
+
+    dragDropZone.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        dragDropZone.classList.remove('drag-over');
+    });
+
+    dragDropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dragDropZone.classList.remove('drag-over');
+        
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            const file = files[0];
+            if (file.type.startsWith('image/')) {
+                handleEditImageFile(file);
+            } else {
+                showNotification('Please upload an image file', 'error');
+            }
+        }
+    });
+
+    // Image preview handler
+    pictureInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            handleEditImageFile(file);
+        }
+    });
+
+    function handleEditImageFile(file) {
+        if (file.size > 5 * 1024 * 1024) { // 5MB limit
+            showNotification('Image size should be less than 5MB', 'error');
+            pictureInput.value = '';
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            editImageData = e.target.result;
+            displayEditImagePreview(editImageData);
+            dragDropZone.classList.add('has-image');
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function displayEditImagePreview(imageData) {
+        imagePreview.innerHTML = `
+            <div class="image-preview-container">
+                <img src="${imageData}" alt="Preview">
+                <button type="button" class="remove-image-btn" id="removeEditImageBtn">×</button>
+            </div>
+        `;
+        imagePreview.classList.add('visible');
+
+        // Add remove button handler
+        document.getElementById('removeEditImageBtn').addEventListener('click', removeEditImage);
+    }
+
+    function removeEditImage() {
+        editImageData = null;
+        pictureInput.value = '';
+        imagePreview.innerHTML = '';
+        imagePreview.classList.remove('visible');
+        dragDropZone.classList.remove('has-image');
+    }
+
+    // Form submission
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const validator = new FormValidator('editStudentForm');
+        validator.clearErrors();
+
+        // Validate all fields
+        let isValid = true;
+
+        isValid = validator.validateRequired('editFirstName', 'First Name') && isValid;
+        isValid = validator.validateRequired('editLastName', 'Last Name') && isValid;
+        
+        const rollNo = document.getElementById('editRollNo').value.trim();
+        isValid = validator.validateRequired('editRollNo', 'Roll Number') && isValid;
+        if (isValid && rollNo) {
+            isValid = validator.validateUnique(
+                'editRollNo', 
+                'Roll Number', 
+                (val) => studentManager.isRollNoUnique(val, currentEditingStudentId),
+                rollNo
+            ) && isValid;
+        }
+
+        const admissionNo = document.getElementById('editAdmissionNo').value.trim();
+        isValid = validator.validateRequired('editAdmissionNo', 'Admission Number') && isValid;
+        if (isValid && admissionNo) {
+            isValid = validator.validateUnique(
+                'editAdmissionNo', 
+                'Admission Number', 
+                (val) => studentManager.isAdmissionNoUnique(val, currentEditingStudentId),
+                admissionNo
+            ) && isValid;
+        }
+
+        isValid = validator.validateSelect('editClass', 'Class') && isValid;
+        isValid = validator.validateSelect('editSection', 'Section') && isValid;
+        isValid = validator.validateDate('editDob') && isValid;
+
+        if (!validator.isValid()) {
+            showNotification('Please fix the errors in the form', 'error');
+            return;
+        }
+
+        // Get form data
+        const formData = {
+            firstName: document.getElementById('editFirstName').value.trim(),
+            lastName: document.getElementById('editLastName').value.trim(),
+            rollNo: rollNo,
+            admissionNo: admissionNo,
+            class: document.getElementById('editClass').value,
+            section: document.getElementById('editSection').value,
+            dob: document.getElementById('editDob').value,
+            picture: editImageData
+        };
+
+        // Update student
+        updateStudent(currentEditingStudentId, formData);
+    });
+}
+
+async function updateStudent(studentId, formData) {
+    try {
+        await studentManager.updateStudent(studentId, formData);
+        showNotification('Student updated successfully!', 'success');
+        resetEditStudentForm();
+        showView('homeView');
+        await renderStudentsList();
+    } catch (error) {
+        showNotification(error.message || 'Error updating student. Please try again.', 'error');
+        console.error('Error updating student:', error);
+    }
+}
+
+function resetEditStudentForm() {
+    const form = document.getElementById('editStudentForm');
+    const dragDropZone = document.getElementById('editDragDropZone');
+    const imagePreview = document.getElementById('editImagePreview');
+    
+    // Reset global image data
+    editImageData = null;
+    currentEditingStudentId = null;
+    
+    form.reset();
+    imagePreview.innerHTML = '';
+    imagePreview.classList.remove('visible');
+    dragDropZone.classList.remove('has-image');
+    
+    // Clear all error messages
+    form.querySelectorAll('.error-message').forEach(el => el.textContent = '');
+    form.querySelectorAll('input, select').forEach(el => el.classList.remove('error'));
+}
+
 // Data Management Functions
 function setupDataManagement() {
     // Export Data button
-    const exportBtn = document.getElementById('exportDataBtn');
-    if (exportBtn) {
-        exportBtn.addEventListener('click', () => {
-            try {
-                const data = studentManager.exportData();
-                showNotification(`Exported ${data.students.length} students successfully!`, 'success');
-            } catch (error) {
-                showNotification('Failed to export data', 'error');
-                console.error('Export error:', error);
-            }
-        });
-    }
+    document.getElementById('exportDataBtn').addEventListener('click', () => {
+        try {
+            const data = studentManager.exportData();
+            showNotification(`Exported ${data.students.length} students successfully!`, 'success');
+        } catch (error) {
+            showNotification('Failed to export data', 'error');
+            console.error('Export error:', error);
+        }
+    });
 
     // Import Data button
-    const importBtn = document.getElementById('importDataBtn');
-    if (importBtn) {
-        importBtn.addEventListener('click', () => {
-            document.getElementById('importFileInput').click();
-        });
-    }
+    document.getElementById('importDataBtn').addEventListener('click', () => {
+        document.getElementById('importFileInput').click();
+    });
 
     // Import file input
-    const importInput = document.getElementById('importFileInput');
-    if (importInput) {
-        importInput.addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (!file) return;
+    document.getElementById('importFileInput').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
 
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const jsonData = JSON.parse(e.target.result);
-                    const success = studentManager.importData(jsonData);
-                    
-                    if (success) {
-                        showNotification(`Imported ${jsonData.students.length} students successfully!`, 'success');
-                        renderStudentsList(); // Refresh the list
-                    } else {
-                        showNotification('Invalid data format. Please select a valid backup file.', 'error');
-                    }
-                } catch (error) {
-                    showNotification('Failed to read file. Please select a valid JSON file.', 'error');
-                    console.error('Import error:', error);
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const jsonData = JSON.parse(e.target.result);
+                const success = studentManager.importData(jsonData);
+                
+                if (success) {
+                    showNotification(`Imported ${jsonData.students.length} students successfully!`, 'success');
+                    renderStudentsList(); // Refresh the list
+                } else {
+                    showNotification('Invalid data format. Please select a valid backup file.', 'error');
                 }
-            };
-            reader.readAsText(file);
-            
-            // Reset the input
-            e.target.value = '';
-        });
-    }
+            } catch (error) {
+                showNotification('Failed to read file. Please select a valid JSON file.', 'error');
+                console.error('Import error:', error);
+            }
+        };
+        reader.readAsText(file);
+        
+        // Reset the input
+        e.target.value = '';
+    });
 }
 
 // Navigation Event Listeners
 function setupNavigation() {
     // Add Student button
-    const addBtn = document.getElementById('addStudentBtn');
-    if (addBtn) {
-        addBtn.addEventListener('click', () => {
-            resetAddStudentForm();
-            showView('addStudentView');
-        });
-    }
+    document.getElementById('addStudentBtn').addEventListener('click', () => {
+        resetAddStudentForm();
+        showView('addStudentView');
+    });
 
     // Back from Add Student
-    const backFromAddBtn = document.getElementById('backFromAddBtn');
-    if (backFromAddBtn) {
-        backFromAddBtn.addEventListener('click', () => {
+    document.getElementById('backFromAddBtn').addEventListener('click', () => {
+        showView('homeView');
+        clearSearch();
+    });
+
+    // Cancel button
+    document.getElementById('cancelBtn').addEventListener('click', () => {
+        showView('homeView');
+        clearSearch();
+    });
+
+    // Back from Edit Student
+    const backFromEditBtn = document.getElementById('backFromEditBtn');
+    if (backFromEditBtn) {
+        backFromEditBtn.addEventListener('click', () => {
+            resetEditStudentForm();
             showView('homeView');
             clearSearch();
         });
     }
 
-    // Cancel button
-    const cancelBtn = document.getElementById('cancelBtn');
-    if (cancelBtn) {
-        cancelBtn.addEventListener('click', () => {
+    // Cancel Edit button
+    const cancelEditBtn = document.getElementById('cancelEditBtn');
+    if (cancelEditBtn) {
+        cancelEditBtn.addEventListener('click', () => {
+            resetEditStudentForm();
             showView('homeView');
             clearSearch();
         });
     }
 
     // Back from Profile
-    const backFromProfileBtn = document.getElementById('backFromProfileBtn');
-    if (backFromProfileBtn) {
-        backFromProfileBtn.addEventListener('click', () => {
-            showView('homeView');
-            clearSearch();
-        });
-    }
+    document.getElementById('backFromProfileBtn').addEventListener('click', () => {
+        showView('homeView');
+        clearSearch();
+    });
 }
 
 // Clear search input
@@ -699,9 +936,7 @@ function clearSearch() {
     const searchResultsInfo = document.getElementById('searchResultsInfo');
     if (searchInput) {
         searchInput.value = '';
-        if (searchResultsInfo) {
-            searchResultsInfo.textContent = '';
-        }
+        searchResultsInfo.textContent = '';
     }
 }
 
@@ -710,6 +945,7 @@ async function init() {
     try {
         setupNavigation();
         setupAddStudentForm();
+        setupEditStudentForm();
         setupDataManagement();
         setupSearchBar();
         await renderStudentsList();
