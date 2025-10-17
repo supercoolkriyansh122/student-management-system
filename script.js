@@ -148,6 +148,7 @@ const studentManager = new StudentManager();
 
 // View Management
 function showView(viewId) {
+    console.log('Switching to view:', viewId);
     document.querySelectorAll('.view').forEach(view => {
         view.classList.remove('active');
     });
@@ -180,7 +181,9 @@ async function renderStudentsList(filteredStudents = null) {
         const searchBar = document.getElementById('searchBar');
 
         // Search bar is always visible now
-        searchBar.style.display = 'block';
+        if (searchBar) {
+            searchBar.style.display = 'block';
+        }
 
         // Update data status
         if (allStudents.length === 0) {
@@ -248,6 +251,11 @@ function setupSearchBar() {
     const searchInput = document.getElementById('searchInput');
     const searchResultsInfo = document.getElementById('searchResultsInfo');
     
+    if (!searchInput) {
+        console.error('Search input not found!');
+        return;
+    }
+    
     searchInput.addEventListener('input', (e) => {
         const searchTerm = e.target.value.toLowerCase().trim();
         const allStudents = studentManager.getAllStudents();
@@ -255,7 +263,9 @@ function setupSearchBar() {
         if (searchTerm === '') {
             // Show all students
             renderStudentsList();
-            searchResultsInfo.textContent = '';
+            if (searchResultsInfo) {
+                searchResultsInfo.textContent = '';
+            }
             return;
         }
         
@@ -271,7 +281,9 @@ function setupSearchBar() {
         });
         
         // Update search results info
-        searchResultsInfo.textContent = `Found ${filteredStudents.length} student${filteredStudents.length === 1 ? '' : 's'}`;
+        if (searchResultsInfo) {
+            searchResultsInfo.textContent = `Found ${filteredStudents.length} student${filteredStudents.length === 1 ? '' : 's'}`;
+        }
         
         // Render filtered students
         renderStudentsList(filteredStudents);
@@ -409,6 +421,16 @@ function setupAddStudentForm() {
     const pictureInput = document.getElementById('picture');
     const imagePreview = document.getElementById('imagePreview');
     const dragDropZone = document.getElementById('dragDropZone');
+
+    if (!form) {
+        console.error('Add student form not found!');
+        return;
+    }
+
+    if (!dragDropZone) {
+        console.error('Drag drop zone not found!');
+        return;
+    }
 
     // Drag and Drop handlers
     dragDropZone.addEventListener('click', () => {
@@ -580,87 +602,124 @@ function resetAddStudentForm() {
 // Data Management Functions
 function setupDataManagement() {
     // Export Data button
-    document.getElementById('exportDataBtn').addEventListener('click', () => {
-        try {
-            const data = studentManager.exportData();
-            showNotification(`Exported ${data.students.length} students successfully!`, 'success');
-        } catch (error) {
-            showNotification('Failed to export data', 'error');
-            console.error('Export error:', error);
-        }
-    });
+    const exportBtn = document.getElementById('exportDataBtn');
+    if (exportBtn) {
+        exportBtn.addEventListener('click', () => {
+            try {
+                const data = studentManager.exportData();
+                showNotification(`Exported ${data.students.length} students successfully!`, 'success');
+            } catch (error) {
+                showNotification('Failed to export data', 'error');
+                console.error('Export error:', error);
+            }
+        });
+    }
 
     // Import Data button
-    document.getElementById('importDataBtn').addEventListener('click', () => {
-        document.getElementById('importFileInput').click();
-    });
+    const importBtn = document.getElementById('importDataBtn');
+    if (importBtn) {
+        importBtn.addEventListener('click', () => {
+            document.getElementById('importFileInput').click();
+        });
+    }
 
     // Import file input
-    document.getElementById('importFileInput').addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        if (!file) return;
+    const importInput = document.getElementById('importFileInput');
+    if (importInput) {
+        importInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
 
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            try {
-                const jsonData = JSON.parse(e.target.result);
-                const success = studentManager.importData(jsonData);
-                
-                if (success) {
-                    showNotification(`Imported ${jsonData.students.length} students successfully!`, 'success');
-                    renderStudentsList(); // Refresh the list
-                } else {
-                    showNotification('Invalid data format. Please select a valid backup file.', 'error');
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const jsonData = JSON.parse(e.target.result);
+                    const success = studentManager.importData(jsonData);
+                    
+                    if (success) {
+                        showNotification(`Imported ${jsonData.students.length} students successfully!`, 'success');
+                        renderStudentsList(); // Refresh the list
+                    } else {
+                        showNotification('Invalid data format. Please select a valid backup file.', 'error');
+                    }
+                } catch (error) {
+                    showNotification('Failed to read file. Please select a valid JSON file.', 'error');
+                    console.error('Import error:', error);
                 }
-            } catch (error) {
-                showNotification('Failed to read file. Please select a valid JSON file.', 'error');
-                console.error('Import error:', error);
-            }
-        };
-        reader.readAsText(file);
-        
-        // Reset the input
-        e.target.value = '';
-    });
+            };
+            reader.readAsText(file);
+            
+            // Reset the input
+            e.target.value = '';
+        });
+    }
 }
 
 // Navigation Event Listeners
 function setupNavigation() {
+    console.log('Setting up navigation...');
+    
     // Add Student button
-    document.getElementById('addStudentBtn').addEventListener('click', () => {
-        resetAddStudentForm();
-        showView('addStudentView');
-    });
+    const addBtn = document.getElementById('addStudentBtn');
+    if (addBtn) {
+        addBtn.addEventListener('click', () => {
+            resetAddStudentForm();
+            showView('addStudentView');
+        });
+    } else {
+        console.error('Add Student button not found!');
+    }
 
     // Test Animations button
-    document.getElementById('testAnimBtn').addEventListener('click', () => {
-        // Test form animation
-        showView('addStudentView');
-        setTimeout(() => {
-            showView('homeView');
+    const testAnimBtn = document.getElementById('testAnimBtn');
+    if (testAnimBtn) {
+        console.log('Test animation button found!');
+        testAnimBtn.addEventListener('click', () => {
+            console.log('Test animation button clicked!');
+            showNotification('🎬 Testing animations...', 'warning');
+            
+            // Test form animation
+            console.log('Switching to addStudentView');
+            showView('addStudentView');
+            
             setTimeout(() => {
-                showNotification('✅ Animations are working! Check the smooth transitions.', 'success');
-            }, 500);
-        }, 1000);
-    });
+                console.log('Switching back to homeView');
+                showView('homeView');
+                setTimeout(() => {
+                    showNotification('✅ Animations are working! Check the smooth transitions.', 'success');
+                }, 500);
+            }, 1000);
+        });
+    } else {
+        console.error('Test animation button not found!');
+    }
 
     // Back from Add Student
-    document.getElementById('backFromAddBtn').addEventListener('click', () => {
-        showView('homeView');
-        clearSearch();
-    });
+    const backFromAddBtn = document.getElementById('backFromAddBtn');
+    if (backFromAddBtn) {
+        backFromAddBtn.addEventListener('click', () => {
+            showView('homeView');
+            clearSearch();
+        });
+    }
 
     // Cancel button
-    document.getElementById('cancelBtn').addEventListener('click', () => {
-        showView('homeView');
-        clearSearch();
-    });
+    const cancelBtn = document.getElementById('cancelBtn');
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', () => {
+            showView('homeView');
+            clearSearch();
+        });
+    }
 
     // Back from Profile
-    document.getElementById('backFromProfileBtn').addEventListener('click', () => {
-        showView('homeView');
-        clearSearch();
-    });
+    const backFromProfileBtn = document.getElementById('backFromProfileBtn');
+    if (backFromProfileBtn) {
+        backFromProfileBtn.addEventListener('click', () => {
+            showView('homeView');
+            clearSearch();
+        });
+    }
 }
 
 // Clear search input
@@ -669,17 +728,36 @@ function clearSearch() {
     const searchResultsInfo = document.getElementById('searchResultsInfo');
     if (searchInput) {
         searchInput.value = '';
-        searchResultsInfo.textContent = '';
+        if (searchResultsInfo) {
+            searchResultsInfo.textContent = '';
+        }
     }
 }
 
 // Initialize Application
 async function init() {
-    setupNavigation();
-    setupAddStudentForm();
-    setupDataManagement();
-    setupSearchBar();
-    await renderStudentsList();
+    console.log('🚀 Initializing application...');
+    
+    try {
+        console.log('Setting up navigation...');
+        setupNavigation();
+        
+        console.log('Setting up form...');
+        setupAddStudentForm();
+        
+        console.log('Setting up data management...');
+        setupDataManagement();
+        
+        console.log('Setting up search bar...');
+        setupSearchBar();
+        
+        console.log('Rendering students list...');
+        await renderStudentsList();
+        
+        console.log('✅ Application initialized successfully!');
+    } catch (error) {
+        console.error('❌ Error during initialization:', error);
+    }
 }
 
 // Run when DOM is loaded
