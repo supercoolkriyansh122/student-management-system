@@ -31,6 +31,21 @@
                 </div>
             </div>
             
+            <!-- Search Bar -->
+            <div class="search-bar" id="searchBar" style="display: none;">
+                <div class="search-input-wrapper">
+                    <span class="search-icon">🔍</span>
+                    <input 
+                        type="text" 
+                        class="search-input" 
+                        id="searchInput" 
+                        placeholder="Search by name, roll number, or admission number..."
+                        autocomplete="off"
+                    >
+                </div>
+                <div class="search-results-info" id="searchResultsInfo"></div>
+            </div>
+            
             <div id="studentsList" class="students-grid">
                 <!-- Student cards will be dynamically added here -->
             </div>
@@ -80,6 +95,13 @@
                 <div class="form-group">
                     <label for="picture">Profile Picture (Optional)</label>
                     <input type="file" id="picture" name="picture" accept="image/*">
+                    <div id="dragDropZone" class="drag-drop-zone">
+                        <div class="upload-icon">📸</div>
+                        <div class="upload-text">
+                            <strong>Click to upload</strong> or drag and drop<br>
+                            <span class="upload-hint">PNG, JPG, GIF up to 5MB</span>
+                        </div>
+                    </div>
                     <div id="imagePreview" class="image-preview"></div>
                 </div>
 
@@ -197,4 +219,3 @@
     <script src="script.js"></script>
 </body>
 </html>
-
