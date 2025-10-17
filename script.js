@@ -148,7 +148,6 @@ const studentManager = new StudentManager();
 
 // View Management
 function showView(viewId) {
-    console.log('Switching to view:', viewId);
     document.querySelectorAll('.view').forEach(view => {
         view.classList.remove('active');
     });
@@ -657,8 +656,6 @@ function setupDataManagement() {
 
 // Navigation Event Listeners
 function setupNavigation() {
-    console.log('Setting up navigation...');
-    
     // Add Student button
     const addBtn = document.getElementById('addStudentBtn');
     if (addBtn) {
@@ -666,32 +663,6 @@ function setupNavigation() {
             resetAddStudentForm();
             showView('addStudentView');
         });
-    } else {
-        console.error('Add Student button not found!');
-    }
-
-    // Test Animations button
-    const testAnimBtn = document.getElementById('testAnimBtn');
-    if (testAnimBtn) {
-        console.log('Test animation button found!');
-        testAnimBtn.addEventListener('click', () => {
-            console.log('Test animation button clicked!');
-            showNotification('🎬 Testing animations...', 'warning');
-            
-            // Test form animation
-            console.log('Switching to addStudentView');
-            showView('addStudentView');
-            
-            setTimeout(() => {
-                console.log('Switching back to homeView');
-                showView('homeView');
-                setTimeout(() => {
-                    showNotification('✅ Animations are working! Check the smooth transitions.', 'success');
-                }, 500);
-            }, 1000);
-        });
-    } else {
-        console.error('Test animation button not found!');
     }
 
     // Back from Add Student
@@ -736,27 +707,14 @@ function clearSearch() {
 
 // Initialize Application
 async function init() {
-    console.log('🚀 Initializing application...');
-    
     try {
-        console.log('Setting up navigation...');
         setupNavigation();
-        
-        console.log('Setting up form...');
         setupAddStudentForm();
-        
-        console.log('Setting up data management...');
         setupDataManagement();
-        
-        console.log('Setting up search bar...');
         setupSearchBar();
-        
-        console.log('Rendering students list...');
         await renderStudentsList();
-        
-        console.log('✅ Application initialized successfully!');
     } catch (error) {
-        console.error('❌ Error during initialization:', error);
+        console.error('Error during initialization:', error);
     }
 }
 
