@@ -167,6 +167,110 @@
         </div>
     </div>
 
+    <!-- Edit Student View -->
+    <div id="editStudentView" class="view">
+        <header class="header">
+            <div class="header-left">
+                <button id="backFromEditBtn" class="btn-back">
+                    <span>←</span> Back
+                </button>
+                <h1>Edit Student</h1>
+            </div>
+        </header>
+        
+        <div class="container">
+            <form id="editStudentForm" class="student-form">
+                <input type="hidden" id="editStudentId">
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="editFirstName">First Name <span class="required">*</span></label>
+                        <input type="text" id="editFirstName" name="firstName" required>
+                        <span class="error-message" id="editFirstNameError"></span>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="editLastName">Last Name <span class="required">*</span></label>
+                        <input type="text" id="editLastName" name="lastName" required>
+                        <span class="error-message" id="editLastNameError"></span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="editPicture">Profile Picture (Optional)</label>
+                    <input type="file" id="editPicture" name="picture" accept="image/*">
+                    <div id="editDragDropZone" class="drag-drop-zone">
+                        <div class="upload-icon">📸</div>
+                        <div class="upload-text">
+                            <strong>Click to upload</strong> or drag and drop<br>
+                            <span class="upload-hint">PNG, JPG, GIF up to 5MB</span>
+                        </div>
+                    </div>
+                    <div id="editImagePreview" class="image-preview"></div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="editRollNo">Roll Number <span class="required">*</span></label>
+                        <input type="text" id="editRollNo" name="rollNo" required>
+                        <span class="error-message" id="editRollNoError"></span>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="editAdmissionNo">Admission Number <span class="required">*</span></label>
+                        <input type="text" id="editAdmissionNo" name="admissionNo" required>
+                        <span class="error-message" id="editAdmissionNoError"></span>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="editClass">Class <span class="required">*</span></label>
+                        <select id="editClass" name="class" required>
+                            <option value="">Select Class</option>
+                            <option value="1">Class 1</option>
+                            <option value="2">Class 2</option>
+                            <option value="3">Class 3</option>
+                            <option value="4">Class 4</option>
+                            <option value="5">Class 5</option>
+                            <option value="6">Class 6</option>
+                            <option value="7">Class 7</option>
+                            <option value="8">Class 8</option>
+                            <option value="9">Class 9</option>
+                            <option value="10">Class 10</option>
+                            <option value="11">Class 11</option>
+                            <option value="12">Class 12</option>
+                        </select>
+                        <span class="error-message" id="editClassError"></span>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="editSection">Section <span class="required">*</span></label>
+                        <select id="editSection" name="section" required>
+                            <option value="">Select Section</option>
+                            <option value="Oasis">Oasis</option>
+                            <option value="Delta">Delta</option>
+                            <option value="Plateau">Plateau</option>
+                            <option value="Cliff">Cliff</option>
+                        </select>
+                        <span class="error-message" id="editSectionError"></span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="editDob">Date of Birth <span class="required">*</span></label>
+                    <input type="date" id="editDob" name="dob" required>
+                    <span class="error-message" id="editDobError"></span>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" id="cancelEditBtn" class="btn-secondary">Cancel</button>
+                    <button type="submit" class="btn-primary">Update Student</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Student Profile View -->
     <div id="profileView" class="view">
         <header class="header">
