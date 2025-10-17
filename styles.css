@@ -33,10 +33,60 @@ body {
 .view {
     display: none;
     min-height: 100vh;
+    opacity: 0;
+    transition: opacity 0.3s ease;
 }
 
 .view.active {
     display: block;
+    animation: fadeIn 0.3s ease forwards;
+}
+
+/* Home view fades in */
+#homeView.active {
+    animation: fadeIn 0.3s ease forwards;
+}
+
+/* Form view slides in from right */
+#addStudentView.active {
+    animation: slideInFromRight 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* Profile view fades in smoothly */
+#profileView.active {
+    animation: fadeInScale 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* Keyframe Animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideInFromRight {
+    from {
+        opacity: 0;
+        transform: translateX(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes fadeInScale {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
 }
 
 /* Header */
@@ -124,6 +174,57 @@ body {
     line-height: 1;
 }
 
+/* Search Bar */
+.search-bar {
+    background: var(--card-bg);
+    border-radius: 0.5rem;
+    padding: 1rem 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-color);
+}
+
+.search-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.search-icon {
+    position: absolute;
+    left: 1rem;
+    color: var(--text-secondary);
+    font-size: 1.25rem;
+    pointer-events: none;
+}
+
+.search-input {
+    width: 100%;
+    padding: 0.75rem 1rem 0.75rem 3rem;
+    border: 2px solid var(--border-color);
+    border-radius: 0.5rem;
+    font-size: 1rem;
+    transition: all 0.2s ease;
+    background: white;
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.search-input::placeholder {
+    color: var(--text-secondary);
+}
+
+.search-results-info {
+    margin-top: 0.75rem;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
 /* Students Grid */
 .students-grid {
     display: grid;
@@ -140,12 +241,25 @@ body {
     cursor: pointer;
     transition: all 0.2s ease;
     border: 1px solid var(--border-color);
+    animation: fadeInUp 0.4s ease forwards;
+    opacity: 0;
 }
 
 .student-card:hover {
     transform: translateY(-4px);
     box-shadow: var(--shadow-lg);
     border-color: var(--primary-color);
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .student-card-header {
@@ -209,6 +323,37 @@ body {
 .detail-row span:last-child {
     color: var(--text-primary);
     font-weight: 500;
+}
+
+/* Empty State */
+.empty-state {
+    display: none;
+    text-align: center;
+    padding: 4rem 2rem;
+    color: var(--text-secondary);
+}
+
+.empty-state.visible {
+    display: block;
+}
+
+.empty-icon {
+    width: 120px;
+    height: 120px;
+    margin: 0 auto 2rem;
+    opacity: 0.3;
+    stroke-width: 1.5;
+}
+
+.empty-state h2 {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+    color: var(--text-primary);
+}
+
+.empty-state p {
+    font-size: 1rem;
+    margin-bottom: 1rem;
 }
 
 /* Data Management Bar */
@@ -331,29 +476,122 @@ body {
     min-height: 1.25rem;
 }
 
+/* Hide default file input */
 .form-group input[type="file"] {
-    padding: 0.5rem;
+    display: none;
+}
+
+/* Drag and Drop Zone */
+.drag-drop-zone {
     border: 2px dashed var(--border-color);
-    border-radius: 0.5rem;
+    border-radius: 0.75rem;
+    padding: 2rem;
+    text-align: center;
     cursor: pointer;
-    width: 100%;
+    transition: all 0.3s ease;
+    background: var(--bg-color);
+    position: relative;
+}
+
+.drag-drop-zone:hover {
+    border-color: var(--primary-color);
+    background: rgba(99, 102, 241, 0.03);
+}
+
+.drag-drop-zone.drag-over {
+    border-color: var(--primary-color);
+    background: rgba(99, 102, 241, 0.08);
+    transform: scale(1.02);
+}
+
+.drag-drop-zone.has-image {
+    border-style: solid;
+    border-color: var(--success-color);
+    background: rgba(16, 185, 129, 0.03);
+}
+
+.upload-icon {
+    font-size: 3rem;
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+    transition: all 0.3s ease;
+}
+
+.drag-drop-zone:hover .upload-icon {
+    color: var(--primary-color);
+    transform: translateY(-4px);
+}
+
+.drag-drop-zone.drag-over .upload-icon {
+    color: var(--primary-color);
+    transform: scale(1.1);
+}
+
+.upload-text {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+
+.upload-text strong {
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+.upload-hint {
+    color: var(--text-secondary);
+    font-size: 0.813rem;
+    margin-top: 0.5rem;
 }
 
 .image-preview {
     margin-top: 1rem;
     display: none;
+    text-align: center;
 }
 
 .image-preview.visible {
     display: block;
+    animation: fadeInScale 0.3s ease forwards;
+}
+
+.image-preview-container {
+    position: relative;
+    display: inline-block;
 }
 
 .image-preview img {
     max-width: 200px;
     max-height: 200px;
-    border-radius: 0.5rem;
+    border-radius: 0.75rem;
     object-fit: cover;
-    box-shadow: var(--shadow-sm);
+    box-shadow: var(--shadow-md);
+    border: 3px solid white;
+}
+
+.remove-image-btn {
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    background: var(--error-color);
+    color: white;
+    border: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    line-height: 1;
+    box-shadow: var(--shadow-md);
+    transition: all 0.2s ease;
+}
+
+.remove-image-btn:hover {
+    background: #dc2626;
+    transform: scale(1.1);
 }
 
 .form-actions {
@@ -505,5 +743,35 @@ body {
         right: 1rem;
         top: 1rem;
     }
-}
 
+    .data-management-bar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1rem;
+    }
+
+    .data-actions {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .search-bar {
+        padding: 0.75rem 1rem;
+    }
+
+    .search-input {
+        font-size: 0.938rem;
+    }
+
+    .drag-drop-zone {
+        padding: 1.5rem 1rem;
+    }
+
+    .upload-icon {
+        font-size: 2.5rem;
+    }
+
+    .upload-text {
+        font-size: 0.875rem;
+    }
+}
