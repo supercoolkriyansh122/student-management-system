@@ -167,26 +167,41 @@ function showNotification(message, type = 'success') {
 }
 
 // Home View Functions
-async function renderStudentsList() {
+async function renderStudentsList(filteredStudents = null) {
     try {
         // Load students with fallback
         await studentManager.loadStudents();
         
-        const students = studentManager.getAllStudents();
+        const allStudents = studentManager.getAllStudents();
+        const students = filteredStudents !== null ? filteredStudents : allStudents;
         const studentsList = document.getElementById('studentsList');
         const emptyState = document.getElementById('emptyState');
         const dataStatus = document.getElementById('dataStatus');
+        const searchBar = document.getElementById('searchBar');
+
+        // Show/hide search bar based on total students
+        if (allStudents.length > 0) {
+            searchBar.style.display = 'block';
+        } else {
+            searchBar.style.display = 'none';
+        }
 
         // Update data status
-        if (students.length === 0) {
+        if (allStudents.length === 0) {
             dataStatus.textContent = 'No students in database';
         } else {
-            dataStatus.textContent = `${students.length} student${students.length === 1 ? '' : 's'} loaded`;
+            dataStatus.textContent = `${allStudents.length} student${allStudents.length === 1 ? '' : 's'} loaded`;
         }
 
         if (students.length === 0) {
             studentsList.innerHTML = '';
-            emptyState.classList.add('visible');
+            if (allStudents.length === 0) {
+                emptyState.classList.add('visible');
+            } else {
+                // Show no results message
+                emptyState.classList.remove('visible');
+                studentsList.innerHTML = '<div style="text-align: center; padding: 3rem; color: var(--text-secondary); grid-column: 1/-1;"><h3>No students found</h3><p>Try adjusting your search terms</p></div>';
+            }
         } else {
             emptyState.classList.remove('visible');
             studentsList.innerHTML = students.map(student => `
@@ -215,8 +230,11 @@ async function renderStudentsList() {
                 </div>
             `).join('');
 
-            // Add click listeners to cards
-            document.querySelectorAll('.student-card').forEach(card => {
+            // Add click listeners to cards and staggered animations
+            document.querySelectorAll('.student-card').forEach((card, index) => {
+                // Staggered animation delay
+                card.style.animationDelay = `${index * 0.05}s`;
+                
                 card.addEventListener('click', () => {
                     const studentId = card.dataset.id;
                     showStudentProfile(studentId);
@@ -227,6 +245,41 @@ async function renderStudentsList() {
         console.error('Error rendering students list:', error);
         showNotification('Error loading students. Please refresh the page.', 'error');
     }
+}
+
+// Search functionality
+function setupSearchBar() {
+    const searchInput = document.getElementById('searchInput');
+    const searchResultsInfo = document.getElementById('searchResultsInfo');
+    
+    searchInput.addEventListener('input', (e) => {
+        const searchTerm = e.target.value.toLowerCase().trim();
+        const allStudents = studentManager.getAllStudents();
+        
+        if (searchTerm === '') {
+            // Show all students
+            renderStudentsList();
+            searchResultsInfo.textContent = '';
+            return;
+        }
+        
+        // Filter students by name, roll number, or admission number
+        const filteredStudents = allStudents.filter(student => {
+            const fullName = `${student.firstName} ${student.lastName}`.toLowerCase();
+            const rollNo = student.rollNo.toLowerCase();
+            const admissionNo = student.admissionNo.toLowerCase();
+            
+            return fullName.includes(searchTerm) || 
+                   rollNo.includes(searchTerm) || 
+                   admissionNo.includes(searchTerm);
+        });
+        
+        // Update search results info
+        searchResultsInfo.textContent = `Found ${filteredStudents.length} student${filteredStudents.length === 1 ? '' : 's'}`;
+        
+        // Render filtered students
+        renderStudentsList(filteredStudents);
+    });
 }
 
 function getInitials(firstName, lastName) {
@@ -351,33 +404,90 @@ class FormValidator {
     }
 }
 
+// Image state management
+let currentImageData = null;
+
 // Add Student Form Handler
 function setupAddStudentForm() {
     const form = document.getElementById('addStudentForm');
     const pictureInput = document.getElementById('picture');
     const imagePreview = document.getElementById('imagePreview');
+    const dragDropZone = document.getElementById('dragDropZone');
+
+    // Drag and Drop handlers
+    dragDropZone.addEventListener('click', () => {
+        pictureInput.click();
+    });
+
+    dragDropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dragDropZone.classList.add('drag-over');
+    });
+
+    dragDropZone.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        dragDropZone.classList.remove('drag-over');
+    });
+
+    dragDropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dragDropZone.classList.remove('drag-over');
+        
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            const file = files[0];
+            if (file.type.startsWith('image/')) {
+                handleImageFile(file);
+            } else {
+                showNotification('Please upload an image file', 'error');
+            }
+        }
+    });
 
     // Image preview handler
     pictureInput.addEventListener('change', function(e) {
         const file = e.target.files[0];
         if (file) {
-            if (file.size > 5 * 1024 * 1024) { // 5MB limit
-                showNotification('Image size should be less than 5MB', 'error');
-                pictureInput.value = '';
-                return;
-            }
-
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                imagePreview.innerHTML = `<img src="${e.target.result}" alt="Preview">`;
-                imagePreview.classList.add('visible');
-            };
-            reader.readAsDataURL(file);
-        } else {
-            imagePreview.innerHTML = '';
-            imagePreview.classList.remove('visible');
+            handleImageFile(file);
         }
     });
+
+    function handleImageFile(file) {
+        if (file.size > 5 * 1024 * 1024) { // 5MB limit
+            showNotification('Image size should be less than 5MB', 'error');
+            pictureInput.value = '';
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            currentImageData = e.target.result;
+            displayImagePreview(currentImageData);
+            dragDropZone.classList.add('has-image');
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function displayImagePreview(imageData) {
+        imagePreview.innerHTML = `
+            <div class="image-preview-container">
+                <img src="${imageData}" alt="Preview">
+                <button type="button" class="remove-image-btn" id="removeImageBtn">×</button>
+            </div>
+        `;
+        imagePreview.classList.add('visible');
+
+        // Add remove button handler
+        document.getElementById('removeImageBtn').addEventListener('click', removeImage);
+    }
+
+    function removeImage() {
+        currentImageData = null;
+        pictureInput.value = '';
+        imagePreview.innerHTML = '';
+        imagePreview.classList.remove('visible');
+        dragDropZone.classList.remove('has-image');
+    }
 
     // Form submission
     form.addEventListener('submit', function(e) {
@@ -432,21 +542,11 @@ function setupAddStudentForm() {
             class: document.getElementById('class').value,
             section: document.getElementById('section').value,
             dob: document.getElementById('dob').value,
-            picture: null
+            picture: currentImageData // Use the stored Base64 image data
         };
 
-        // Get image if uploaded
-        const pictureFile = pictureInput.files[0];
-        if (pictureFile) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                formData.picture = e.target.result;
-                saveStudent(formData);
-            };
-            reader.readAsDataURL(pictureFile);
-        } else {
-            saveStudent(formData);
-        }
+        // Save student
+        saveStudent(formData);
     });
 }
 
@@ -465,9 +565,16 @@ async function saveStudent(formData) {
 
 function resetAddStudentForm() {
     const form = document.getElementById('addStudentForm');
+    const dragDropZone = document.getElementById('dragDropZone');
+    const imagePreview = document.getElementById('imagePreview');
+    
+    // Reset global image data
+    currentImageData = null;
+    
     form.reset();
-    document.getElementById('imagePreview').innerHTML = '';
-    document.getElementById('imagePreview').classList.remove('visible');
+    imagePreview.innerHTML = '';
+    imagePreview.classList.remove('visible');
+    dragDropZone.classList.remove('has-image');
     
     // Clear all error messages
     form.querySelectorAll('.error-message').forEach(el => el.textContent = '');
@@ -532,17 +639,30 @@ function setupNavigation() {
     // Back from Add Student
     document.getElementById('backFromAddBtn').addEventListener('click', () => {
         showView('homeView');
+        clearSearch();
     });
 
     // Cancel button
     document.getElementById('cancelBtn').addEventListener('click', () => {
         showView('homeView');
+        clearSearch();
     });
 
     // Back from Profile
     document.getElementById('backFromProfileBtn').addEventListener('click', () => {
         showView('homeView');
+        clearSearch();
     });
+}
+
+// Clear search input
+function clearSearch() {
+    const searchInput = document.getElementById('searchInput');
+    const searchResultsInfo = document.getElementById('searchResultsInfo');
+    if (searchInput) {
+        searchInput.value = '';
+        searchResultsInfo.textContent = '';
+    }
 }
 
 // Initialize Application
@@ -550,6 +670,7 @@ async function init() {
     setupNavigation();
     setupAddStudentForm();
     setupDataManagement();
+    setupSearchBar();
     await renderStudentsList();
 }
 
@@ -559,4 +680,3 @@ if (document.readyState === 'loading') {
 } else {
     init();
 }
-
