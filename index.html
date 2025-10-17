@@ -14,9 +14,14 @@
     <div id="homeView" class="view active">
         <header class="header">
             <h1>Student Management System</h1>
-            <button id="addStudentBtn" class="btn-primary">
-                <span class="btn-icon">+</span> Add Student
-            </button>
+            <div style="display: flex; gap: 1rem; align-items: center;">
+                <button id="addStudentBtn" class="btn-primary">
+                    <span class="btn-icon">+</span> Add Student
+                </button>
+                <button id="testAnimBtn" class="btn-secondary" style="background: #f59e0b; color: white;">
+                    🎬 Test Animations
+                </button>
+            </div>
         </header>
         
         <div class="container">
@@ -32,7 +37,7 @@
             </div>
             
             <!-- Search Bar -->
-            <div class="search-bar" id="searchBar" style="display: none;">
+            <div class="search-bar" id="searchBar">
                 <div class="search-input-wrapper">
                     <span class="search-icon">🔍</span>
                     <input 
