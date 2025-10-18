@@ -45,6 +45,58 @@
                 </div>
                 <div class="search-results-info" id="searchResultsInfo"></div>
             </div>
+
+            <!-- Filters and Sort Bar -->
+            <div class="filters-bar" id="filtersBar">
+                <div class="filters-group">
+                    <div class="filter-item">
+                        <label for="filterClass">Filter by Class:</label>
+                        <select id="filterClass" class="filter-select">
+                            <option value="">All Classes</option>
+                            <option value="1">Class 1</option>
+                            <option value="2">Class 2</option>
+                            <option value="3">Class 3</option>
+                            <option value="4">Class 4</option>
+                            <option value="5">Class 5</option>
+                            <option value="6">Class 6</option>
+                            <option value="7">Class 7</option>
+                            <option value="8">Class 8</option>
+                            <option value="9">Class 9</option>
+                            <option value="10">Class 10</option>
+                            <option value="11">Class 11</option>
+                            <option value="12">Class 12</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-item">
+                        <label for="filterSection">Filter by Section:</label>
+                        <select id="filterSection" class="filter-select">
+                            <option value="">All Sections</option>
+                            <option value="Oasis">Oasis</option>
+                            <option value="Delta">Delta</option>
+                            <option value="Plateau">Plateau</option>
+                            <option value="Cliff">Cliff</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-item">
+                        <label for="sortBy">Sort by:</label>
+                        <select id="sortBy" class="filter-select">
+                            <option value="">Default</option>
+                            <option value="name-asc">Name (A-Z)</option>
+                            <option value="name-desc">Name (Z-A)</option>
+                            <option value="roll-asc">Roll Number (Low-High)</option>
+                            <option value="roll-desc">Roll Number (High-Low)</option>
+                            <option value="date-newest">Newest First</option>
+                            <option value="date-oldest">Oldest First</option>
+                        </select>
+                    </div>
+
+                    <button id="clearFiltersBtn" class="btn-clear-filters">
+                        ✕ Clear Filters
+                    </button>
+                </div>
+            </div>
             
             <div id="studentsList" class="students-grid">
                 <!-- Student cards will be dynamically added here -->
@@ -279,6 +331,14 @@
                     <span>←</span> Back
                 </button>
                 <h1>Student Profile</h1>
+            </div>
+            <div class="profile-actions">
+                <button id="printStudentBtn" class="btn-print">
+                    🖨️ Print Profile
+                </button>
+                <button id="deleteStudentBtn" class="btn-delete">
+                    🗑️ Delete Student
+                </button>
             </div>
         </header>
         
