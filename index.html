@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Management System</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Notification Toast -->
+    <div id="notification" class="notification"></div>
+
+    <!-- Login View -->
+    <div id="loginView" class="view active">
+        <div class="login-container">
+            <div class="login-card">
+                <div class="login-header">
+                    <h1>🎓 Student Management System</h1>
+                    <p>Please login to continue</p>
+                </div>
+                <form id="loginForm" class="login-form">
+                    <div class="form-group">
+                        <label for="loginUsername">Username</label>
+                        <input type="text" id="loginUsername" name="username" required autocomplete="username">
+                    </div>
+                    <div class="form-group">
+                        <label for="loginPassword">Password</label>
+                        <input type="password" id="loginPassword" name="password" required autocomplete="current-password">
+                    </div>
+                    <button type="submit" class="btn-primary btn-block">Login</button>
+                </form>
+                <div class="login-info">
+                    <h4>Default Accounts:</h4>
+                    <p><strong>Admin:</strong> admin / admin123</p>
+                    <p><strong>Teacher:</strong> teacher / teacher123</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Info Bar (shown when logged in) -->
+    <div id="userInfoBar" class="user-info-bar" style="display: none;">
+        <div class="user-info">
+            <span class="user-icon">👤</span>
+            <div class="user-details">
+                <span class="user-name" id="currentUserName"></span>
+                <span class="user-role" id="currentUserRole"></span>
+            </div>
+        </div>
+        <button id="logoutBtn" class="btn-logout">Logout</button>
+    </div>
+
+    <!-- Home View -->
+    <div id="homeView" class="view">
+        <header class="header">
+            <h1>Student Management System</h1>
+            <div class="header-actions">
+                <button id="manageUsersBtn" class="btn-secondary" style="display: none;">
+                    👥 Manage Users
+                </button>
+                <button id="attendanceViewBtn" class="btn-secondary">
+                    📊 Attendance
+                </button>
+                <button id="addStudentBtn" class="btn-primary">
+                    <span class="btn-icon">+</span> Add Student
+                </button>
+            </div>
+        </header>
+        
+        <div class="container">
+            <div class="data-management-bar">
+                <div class="data-info">
+                    <span id="dataStatus">Loading data...</span>
+                </div>
+                <div class="data-actions">
+                    <button id="exportDataBtn" class="btn-secondary btn-small">📥 Export Data</button>
+                    <button id="importDataBtn" class="btn-secondary btn-small">📤 Import Data</button>
+                    <input type="file" id="importFileInput" accept=".json" style="display: none;">
+                </div>
+            </div>
+            
+            <!-- Search Bar -->
+            <div class="search-bar" id="searchBar">
+                <div class="search-input-wrapper">
+                    <span class="search-icon">🔍</span>
+                    <input 
+                        type="text" 
+                        class="search-input" 
+                        id="searchInput" 
+                        placeholder="Search by name, roll number, or admission number..."
+                        autocomplete="off"
+                    >
+                </div>
+                <div class="search-results-info" id="searchResultsInfo"></div>
+            </div>
+
+            <!-- Filters and Sort Bar -->
+            <div class="filters-bar" id="filtersBar">
+                <div class="filters-group">
+                    <div class="filter-item">
+                        <label for="filterClass">Filter by Class:</label>
+                        <select id="filterClass" class="filter-select">
+                            <option value="">All Classes</option>
+                            <option value="1">Class 1</option>
+                            <option value="2">Class 2</option>
+                            <option value="3">Class 3</option>
+                            <option value="4">Class 4</option>
+                            <option value="5">Class 5</option>
+                            <option value="6">Class 6</option>
+                            <option value="7">Class 7</option>
+                            <option value="8">Class 8</option>
+                            <option value="9">Class 9</option>
+                            <option value="10">Class 10</option>
+                            <option value="11">Class 11</option>
+                            <option value="12">Class 12</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-item">
+                        <label for="filterSection">Filter by Section:</label>
+                        <select id="filterSection" class="filter-select">
+                            <option value="">All Sections</option>
+                            <option value="Oasis">Oasis</option>
+                            <option value="Delta">Delta</option>
+                            <option value="Plateau">Plateau</option>
+                            <option value="Cliff">Cliff</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-item">
+                        <label for="sortBy">Sort by:</label>
+                        <select id="sortBy" class="filter-select">
+                            <option value="">Default</option>
+                            <option value="name-asc">Name (A-Z)</option>
+                            <option value="name-desc">Name (Z-A)</option>
+                            <option value="roll-asc">Roll Number (Low-High)</option>
+                            <option value="roll-desc">Roll Number (High-Low)</option>
+                            <option value="date-newest">Newest First</option>
+                            <option value="date-oldest">Oldest First</option>
+                        </select>
+                    </div>
+
+                    <button id="clearFiltersBtn" class="btn-clear-filters">
+                        ✕ Clear Filters
+                    </button>
+                </div>
+            </div>
+            
+            <div id="studentsList" class="students-grid">
+                <!-- Student cards will be dynamically added here -->
+            </div>
+            <div id="emptyState" class="empty-state">
+                <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="9" cy="7" r="4"></circle>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>
+                <h2>No Students Yet</h2>
+                <p>Click the "Add Student" button to add your first student</p>
+                <div class="empty-state-help">
+                    <p><strong>💡 Tip:</strong> If you created students in another browser tab, use "Import Data" to load them here.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Student View -->
+    <div id="addStudentView" class="view">
+        <header class="header">
+            <div class="header-left">
+                <button id="backFromAddBtn" class="btn-back">
+                    <span>←</span> Back
+                </button>
+                <h1>Add New Student</h1>
+            </div>
+        </header>
+        
+        <div class="container">
+            <form id="addStudentForm" class="student-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="firstName">First Name <span class="required">*</span></label>
+                        <input type="text" id="firstName" name="firstName" required>
+                        <span class="error-message" id="firstNameError"></span>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="lastName">Last Name <span class="required">*</span></label>
+                        <input type="text" id="lastName" name="lastName" required>
+                        <span class="error-message" id="lastNameError"></span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="picture">Profile Picture (Optional)</label>
+                    <input type="file" id="picture" name="picture" accept="image/*">
+                    <div id="dragDropZone" class="drag-drop-zone">
+                        <div class="upload-icon">📸</div>
+                        <div class="upload-text">
+                            <strong>Click to upload</strong> or drag and drop<br>
+                            <span class="upload-hint">PNG, JPG, GIF up to 5MB</span>
+                        </div>
+                    </div>
+                    <div id="imagePreview" class="image-preview"></div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="rollNo">Roll Number <span class="required">*</span></label>
+                        <input type="text" id="rollNo" name="rollNo" required>
+                        <span class="error-message" id="rollNoError"></span>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="admissionNo">Admission Number <span class="required">*</span></label>
+                        <input type="text" id="admissionNo" name="admissionNo" required>
+                        <span class="error-message" id="admissionNoError"></span>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="class">Class <span class="required">*</span></label>
+                        <select id="class" name="class" required>
+                            <option value="">Select Class</option>
+                            <option value="1">Class 1</option>
+                            <option value="2">Class 2</option>
+                            <option value="3">Class 3</option>
+                            <option value="4">Class 4</option>
+                            <option value="5">Class 5</option>
+                            <option value="6">Class 6</option>
+                            <option value="7">Class 7</option>
+                            <option value="8">Class 8</option>
+                            <option value="9">Class 9</option>
+                            <option value="10">Class 10</option>
+                            <option value="11">Class 11</option>
+                            <option value="12">Class 12</option>
+                        </select>
+                        <span class="error-message" id="classError"></span>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="section">Section <span class="required">*</span></label>
+                        <select id="section" name="section" required>
+                            <option value="">Select Section</option>
+                            <option value="Oasis">Oasis</option>
+                            <option value="Delta">Delta</option>
+                            <option value="Plateau">Plateau</option>
+                            <option value="Cliff">Cliff</option>
+                        </select>
+                        <span class="error-message" id="sectionError"></span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="dob">Date of Birth <span class="required">*</span></label>
+                    <input type="date" id="dob" name="dob" required>
+                    <span class="error-message" id="dobError"></span>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" id="cancelBtn" class="btn-secondary">Cancel</button>
+                    <button type="submit" class="btn-primary">Add Student</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Student View -->
+    <div id="editStudentView" class="view">
+        <header class="header">
+            <div class="header-left">
+                <button id="backFromEditBtn" class="btn-back">
+                    <span>←</span> Back
+                </button>
+                <h1>Edit Student</h1>
+            </div>
+        </header>
+        
+        <div class="container">
+            <form id="editStudentForm" class="student-form">
+                <input type="hidden" id="editStudentId">
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="editFirstName">First Name <span class="required">*</span></label>
+                        <input type="text" id="editFirstName" name="firstName" required>
+                        <span class="error-message" id="editFirstNameError"></span>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="editLastName">Last Name <span class="required">*</span></label>
+                        <input type="text" id="editLastName" name="lastName" required>
+                        <span class="error-message" id="editLastNameError"></span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="editPicture">Profile Picture (Optional)</label>
+                    <input type="file" id="editPicture" name="picture" accept="image/*">
+                    <div id="editDragDropZone" class="drag-drop-zone">
+                        <div class="upload-icon">📸</div>
+                        <div class="upload-text">
+                            <strong>Click to upload</strong> or drag and drop<br>
+                            <span class="upload-hint">PNG, JPG, GIF up to 5MB</span>
+                        </div>
+                    </div>
+                    <div id="editImagePreview" class="image-preview"></div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="editRollNo">Roll Number <span class="required">*</span></label>
+                        <input type="text" id="editRollNo" name="rollNo" required>
+                        <span class="error-message" id="editRollNoError"></span>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="editAdmissionNo">Admission Number <span class="required">*</span></label>
+                        <input type="text" id="editAdmissionNo" name="admissionNo" required>
+                        <span class="error-message" id="editAdmissionNoError"></span>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="editClass">Class <span class="required">*</span></label>
+                        <select id="editClass" name="class" required>
+                            <option value="">Select Class</option>
+                            <option value="1">Class 1</option>
+                            <option value="2">Class 2</option>
+                            <option value="3">Class 3</option>
+                            <option value="4">Class 4</option>
+                            <option value="5">Class 5</option>
+                            <option value="6">Class 6</option>
+                            <option value="7">Class 7</option>
+                            <option value="8">Class 8</option>
+                            <option value="9">Class 9</option>
+                            <option value="10">Class 10</option>
+                            <option value="11">Class 11</option>
+                            <option value="12">Class 12</option>
+                        </select>
+                        <span class="error-message" id="editClassError"></span>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="editSection">Section <span class="required">*</span></label>
+                        <select id="editSection" name="section" required>
+                            <option value="">Select Section</option>
+                            <option value="Oasis">Oasis</option>
+                            <option value="Delta">Delta</option>
+                            <option value="Plateau">Plateau</option>
+                            <option value="Cliff">Cliff</option>
+                        </select>
+                        <span class="error-message" id="editSectionError"></span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="editDob">Date of Birth <span class="required">*</span></label>
+                    <input type="date" id="editDob" name="dob" required>
+                    <span class="error-message" id="editDobError"></span>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" id="cancelEditBtn" class="btn-secondary">Cancel</button>
+                    <button type="submit" class="btn-primary">Update Student</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Student Profile View -->
+    <div id="profileView" class="view">
+        <header class="header">
+            <div class="header-left">
+                <button id="backFromProfileBtn" class="btn-back">
+                    <span>←</span> Back
+                </button>
+                <h1>Student Profile</h1>
+            </div>
+            <div class="profile-actions">
+                <button id="viewAttendanceBtn" class="btn-secondary">
+                    📊 Attendance History
+                </button>
+                <button id="printStudentBtn" class="btn-print">
+                    🖨️ Print Profile
+                </button>
+                <button id="deleteStudentBtn" class="btn-delete">
+                    🗑️ Delete Student
+                </button>
+            </div>
+        </header>
+        
+        <div class="container">
+            <div class="profile-card">
+                <div class="profile-header">
+                    <div id="profilePicture" class="profile-picture">
+                        <span class="profile-initials"></span>
+                    </div>
+                    <div class="profile-name">
+                        <h2 id="profileName"></h2>
+                        <p id="profileClass"></p>
+                    </div>
+                </div>
+                
+                <div class="profile-details">
+                    <div class="detail-item">
+                        <span class="detail-label">Roll Number</span>
+                        <span class="detail-value" id="profileRollNo"></span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Admission Number</span>
+                        <span class="detail-value" id="profileAdmissionNo"></span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Class</span>
+                        <span class="detail-value" id="profileClassValue"></span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Section</span>
+                        <span class="detail-value" id="profileSection"></span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Date of Birth</span>
+                        <span class="detail-value" id="profileDob"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Attendance View -->
+    <div id="attendanceView" class="view">
+        <header class="header">
+            <div class="header-left">
+                <button id="backFromAttendanceBtn" class="btn-back">
+                    <span>←</span> Back
+                </button>
+                <h1>Attendance Tracking</h1>
+            </div>
+        </header>
+        
+        <div class="container">
+            <!-- Attendance Date Selector -->
+            <div class="attendance-controls">
+                <div class="date-selector">
+                    <label for="attendanceDate">Select Date:</label>
+                    <input type="date" id="attendanceDate" class="date-input">
+                    <button id="todayBtn" class="btn-secondary btn-small">Today</button>
+                </div>
+                <div class="attendance-stats-summary" id="attendanceStatsSummary"></div>
+            </div>
+
+            <!-- Attendance List -->
+            <div class="attendance-container">
+                <div id="attendanceList" class="attendance-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Attendance History View -->
+    <div id="attendanceHistoryView" class="view">
+        <header class="header">
+            <div class="header-left">
+                <button id="backFromHistoryBtn" class="btn-back">
+                    <span>←</span> Back
+                </button>
+                <h1 id="historyStudentName">Attendance History</h1>
+            </div>
+        </header>
+        
+        <div class="container">
+            <div class="attendance-stats-card" id="attendanceStatsCard"></div>
+            <div class="attendance-history-list" id="attendanceHistoryList"></div>
+        </div>
+    </div>
+
+    <!-- User Management View -->
+    <div id="userManagementView" class="view">
+        <header class="header">
+            <div class="header-left">
+                <button id="backFromUsersBtn" class="btn-back">
+                    <span>←</span> Back
+                </button>
+                <h1>User Management</h1>
+            </div>
+            <button id="addUserBtn" class="btn-primary">
+                <span class="btn-icon">+</span> Add User
+            </button>
+        </header>
+        
+        <div class="container">
+            <div class="users-list-container" id="usersListContainer"></div>
+        </div>
+    </div>
+
+    <!-- Add User View -->
+    <div id="addUserView" class="view">
+        <header class="header">
+            <div class="header-left">
+                <button id="backFromAddUserBtn" class="btn-back">
+                    <span>←</span> Back
+                </button>
+                <h1>Create New User</h1>
+            </div>
+        </header>
+        
+        <div class="container">
+            <form id="addUserForm" class="student-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="userName">Full Name <span class="required">*</span></label>
+                        <input type="text" id="userName" name="name" required>
+                        <span class="error-message" id="userNameError"></span>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="userEmail">Email <span class="required">*</span></label>
+                        <input type="email" id="userEmail" name="email" required>
+                        <span class="error-message" id="userEmailError"></span>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="userUsername">Username <span class="required">*</span></label>
+                        <input type="text" id="userUsername" name="username" required autocomplete="off">
+                        <span class="error-message" id="userUsernameError"></span>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="userPassword">Password <span class="required">*</span></label>
+                        <input type="password" id="userPassword" name="password" required autocomplete="new-password">
+                        <span class="error-message" id="userPasswordError"></span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="userRole">Role <span class="required">*</span></label>
+                    <select id="userRole" name="role" required>
+                        <option value="">Select Role</option>
+                        <option value="admin">👑 Administrator (Full Access)</option>
+                        <option value="teacher">👨‍🏫 Teacher (View, Edit, Attendance)</option>
+                        <option value="student">🎓 Student (View Only)</option>
+                    </select>
+                    <span class="error-message" id="userRoleError"></span>
+                </div>
+
+                <div class="role-description" id="roleDescription"></div>
+
+                <div class="form-actions">
+                    <button type="button" id="cancelUserBtn" class="btn-secondary">Cancel</button>
+                    <button type="submit" class="btn-primary">Create User</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="auth.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,30 @@
+# Ignore backup and copy files
+COPY-*.txt
+*-BACKUP.*
+*.bak
+
+# Ignore IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Ignore OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Ignore logs
+*.log
+npm-debug.log*
+
+# Ignore node_modules if you add them later
+node_modules/
+
+# Keep the main files
+!index.html
+!styles.css
+!script.js
+!auth.js
+!README.md
