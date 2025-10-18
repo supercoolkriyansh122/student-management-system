@@ -10,13 +10,61 @@
     <!-- Notification Toast -->
     <div id="notification" class="notification"></div>
 
+    <!-- Login View -->
+    <div id="loginView" class="view active">
+        <div class="login-container">
+            <div class="login-card">
+                <div class="login-header">
+                    <h1>🎓 Student Management System</h1>
+                    <p>Please login to continue</p>
+                </div>
+                <form id="loginForm" class="login-form">
+                    <div class="form-group">
+                        <label for="loginUsername">Username</label>
+                        <input type="text" id="loginUsername" name="username" required autocomplete="username">
+                    </div>
+                    <div class="form-group">
+                        <label for="loginPassword">Password</label>
+                        <input type="password" id="loginPassword" name="password" required autocomplete="current-password">
+                    </div>
+                    <button type="submit" class="btn-primary btn-block">Login</button>
+                </form>
+                <div class="login-info">
+                    <h4>Default Accounts:</h4>
+                    <p><strong>Admin:</strong> admin / admin123</p>
+                    <p><strong>Teacher:</strong> teacher / teacher123</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Info Bar (shown when logged in) -->
+    <div id="userInfoBar" class="user-info-bar" style="display: none;">
+        <div class="user-info">
+            <span class="user-icon">👤</span>
+            <div class="user-details">
+                <span class="user-name" id="currentUserName"></span>
+                <span class="user-role" id="currentUserRole"></span>
+            </div>
+        </div>
+        <button id="logoutBtn" class="btn-logout">Logout</button>
+    </div>
+
     <!-- Home View -->
-    <div id="homeView" class="view active">
+    <div id="homeView" class="view">
         <header class="header">
             <h1>Student Management System</h1>
-            <button id="addStudentBtn" class="btn-primary">
-                <span class="btn-icon">+</span> Add Student
-            </button>
+            <div class="header-actions">
+                <button id="manageUsersBtn" class="btn-secondary" style="display: none;">
+                    👥 Manage Users
+                </button>
+                <button id="attendanceViewBtn" class="btn-secondary">
+                    📊 Attendance
+                </button>
+                <button id="addStudentBtn" class="btn-primary">
+                    <span class="btn-icon">+</span> Add Student
+                </button>
+            </div>
         </header>
         
         <div class="container">
@@ -333,6 +381,9 @@
                 <h1>Student Profile</h1>
             </div>
             <div class="profile-actions">
+                <button id="viewAttendanceBtn" class="btn-secondary">
+                    📊 Attendance History
+                </button>
                 <button id="printStudentBtn" class="btn-print">
                     🖨️ Print Profile
                 </button>
@@ -380,6 +431,134 @@
         </div>
     </div>
 
+    <!-- Attendance View -->
+    <div id="attendanceView" class="view">
+        <header class="header">
+            <div class="header-left">
+                <button id="backFromAttendanceBtn" class="btn-back">
+                    <span>←</span> Back
+                </button>
+                <h1>Attendance Tracking</h1>
+            </div>
+        </header>
+        
+        <div class="container">
+            <!-- Attendance Date Selector -->
+            <div class="attendance-controls">
+                <div class="date-selector">
+                    <label for="attendanceDate">Select Date:</label>
+                    <input type="date" id="attendanceDate" class="date-input">
+                    <button id="todayBtn" class="btn-secondary btn-small">Today</button>
+                </div>
+                <div class="attendance-stats-summary" id="attendanceStatsSummary"></div>
+            </div>
+
+            <!-- Attendance List -->
+            <div class="attendance-container">
+                <div id="attendanceList" class="attendance-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Attendance History View -->
+    <div id="attendanceHistoryView" class="view">
+        <header class="header">
+            <div class="header-left">
+                <button id="backFromHistoryBtn" class="btn-back">
+                    <span>←</span> Back
+                </button>
+                <h1 id="historyStudentName">Attendance History</h1>
+            </div>
+        </header>
+        
+        <div class="container">
+            <div class="attendance-stats-card" id="attendanceStatsCard"></div>
+            <div class="attendance-history-list" id="attendanceHistoryList"></div>
+        </div>
+    </div>
+
+    <!-- User Management View -->
+    <div id="userManagementView" class="view">
+        <header class="header">
+            <div class="header-left">
+                <button id="backFromUsersBtn" class="btn-back">
+                    <span>←</span> Back
+                </button>
+                <h1>User Management</h1>
+            </div>
+            <button id="addUserBtn" class="btn-primary">
+                <span class="btn-icon">+</span> Add User
+            </button>
+        </header>
+        
+        <div class="container">
+            <div class="users-list-container" id="usersListContainer"></div>
+        </div>
+    </div>
+
+    <!-- Add User View -->
+    <div id="addUserView" class="view">
+        <header class="header">
+            <div class="header-left">
+                <button id="backFromAddUserBtn" class="btn-back">
+                    <span>←</span> Back
+                </button>
+                <h1>Create New User</h1>
+            </div>
+        </header>
+        
+        <div class="container">
+            <form id="addUserForm" class="student-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="userName">Full Name <span class="required">*</span></label>
+                        <input type="text" id="userName" name="name" required>
+                        <span class="error-message" id="userNameError"></span>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="userEmail">Email <span class="required">*</span></label>
+                        <input type="email" id="userEmail" name="email" required>
+                        <span class="error-message" id="userEmailError"></span>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="userUsername">Username <span class="required">*</span></label>
+                        <input type="text" id="userUsername" name="username" required autocomplete="off">
+                        <span class="error-message" id="userUsernameError"></span>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="userPassword">Password <span class="required">*</span></label>
+                        <input type="password" id="userPassword" name="password" required autocomplete="new-password">
+                        <span class="error-message" id="userPasswordError"></span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="userRole">Role <span class="required">*</span></label>
+                    <select id="userRole" name="role" required>
+                        <option value="">Select Role</option>
+                        <option value="admin">👑 Administrator (Full Access)</option>
+                        <option value="teacher">👨‍🏫 Teacher (View, Edit, Attendance)</option>
+                        <option value="student">🎓 Student (View Only)</option>
+                    </select>
+                    <span class="error-message" id="userRoleError"></span>
+                </div>
+
+                <div class="role-description" id="roleDescription"></div>
+
+                <div class="form-actions">
+                    <button type="button" id="cancelUserBtn" class="btn-secondary">Cancel</button>
+                    <button type="submit" class="btn-primary">Create User</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="auth.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
