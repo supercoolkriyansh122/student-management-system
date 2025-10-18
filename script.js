@@ -130,6 +130,18 @@ class StudentManager {
         return this.students[index];
     }
 
+    // Delete student
+    async deleteStudent(id) {
+        const index = this.students.findIndex(s => s.id === id);
+        if (index === -1) {
+            throw new Error('Student not found');
+        }
+
+        this.students.splice(index, 1);
+        this.saveToLocalStorage();
+        return true;
+    }
+
     // Get student by ID
     getStudent(id) {
         return this.students.find(s => s.id === id);
@@ -272,26 +284,14 @@ async function renderStudentsList(filteredStudents = null) {
     }
 }
 
-// Search functionality
-function setupSearchBar() {
-    const searchInput = document.getElementById('searchInput');
-    const searchResultsInfo = document.getElementById('searchResultsInfo');
-    
-    if (!searchInput || !searchResultsInfo) return;
-    
-    searchInput.addEventListener('input', (e) => {
-        const searchTerm = e.target.value.toLowerCase().trim();
-        const allStudents = studentManager.getAllStudents();
-        
-        if (searchTerm === '') {
-            // Show all students
-            renderStudentsList();
-            searchResultsInfo.textContent = '';
-            return;
-        }
-        
-        // Filter students by name, roll number, or admission number
-        const filteredStudents = allStudents.filter(student => {
+// Filter and Sort Students
+function filterAndSortStudents(students) {
+    let filtered = [...students];
+
+    // Apply search filter
+    if (currentFilters.searchTerm) {
+        const searchTerm = currentFilters.searchTerm.toLowerCase();
+        filtered = filtered.filter(student => {
             const fullName = `${student.firstName} ${student.lastName}`.toLowerCase();
             const rollNo = student.rollNo.toLowerCase();
             const admissionNo = student.admissionNo.toLowerCase();
@@ -300,13 +300,141 @@ function setupSearchBar() {
                    rollNo.includes(searchTerm) || 
                    admissionNo.includes(searchTerm);
         });
+    }
+
+    // Apply class filter
+    if (currentFilters.class) {
+        filtered = filtered.filter(student => student.class === currentFilters.class);
+    }
+
+    // Apply section filter
+    if (currentFilters.section) {
+        filtered = filtered.filter(student => student.section === currentFilters.section);
+    }
+
+    // Apply sorting
+    if (currentFilters.sortBy) {
+        switch (currentFilters.sortBy) {
+            case 'name-asc':
+                filtered.sort((a, b) => {
+                    const nameA = `${a.firstName} ${a.lastName}`.toLowerCase();
+                    const nameB = `${b.firstName} ${b.lastName}`.toLowerCase();
+                    return nameA.localeCompare(nameB);
+                });
+                break;
+            case 'name-desc':
+                filtered.sort((a, b) => {
+                    const nameA = `${a.firstName} ${a.lastName}`.toLowerCase();
+                    const nameB = `${b.firstName} ${b.lastName}`.toLowerCase();
+                    return nameB.localeCompare(nameA);
+                });
+                break;
+            case 'roll-asc':
+                filtered.sort((a, b) => {
+                    return a.rollNo.localeCompare(b.rollNo, undefined, { numeric: true });
+                });
+                break;
+            case 'roll-desc':
+                filtered.sort((a, b) => {
+                    return b.rollNo.localeCompare(a.rollNo, undefined, { numeric: true });
+                });
+                break;
+            case 'date-newest':
+                filtered.sort((a, b) => parseInt(b.id) - parseInt(a.id));
+                break;
+            case 'date-oldest':
+                filtered.sort((a, b) => parseInt(a.id) - parseInt(b.id));
+                break;
+        }
+    }
+
+    return filtered;
+}
+
+// Apply filters and update view
+function applyFiltersAndSort() {
+    const allStudents = studentManager.getAllStudents();
+    const filteredStudents = filterAndSortStudents(allStudents);
+    
+    // Update results info
+    const searchResultsInfo = document.getElementById('searchResultsInfo');
+    if (searchResultsInfo) {
+        const activeFilters = [];
+        if (currentFilters.searchTerm) activeFilters.push('search');
+        if (currentFilters.class) activeFilters.push('class');
+        if (currentFilters.section) activeFilters.push('section');
         
-        // Update search results info
-        searchResultsInfo.textContent = `Found ${filteredStudents.length} student${filteredStudents.length === 1 ? '' : 's'}`;
-        
-        // Render filtered students
-        renderStudentsList(filteredStudents);
+        if (activeFilters.length > 0 || filteredStudents.length !== allStudents.length) {
+            searchResultsInfo.textContent = `Showing ${filteredStudents.length} of ${allStudents.length} student${allStudents.length === 1 ? '' : 's'}`;
+        } else {
+            searchResultsInfo.textContent = '';
+        }
+    }
+    
+    renderStudentsList(filteredStudents);
+}
+
+// Search functionality
+function setupSearchBar() {
+    const searchInput = document.getElementById('searchInput');
+    
+    if (!searchInput) return;
+    
+    searchInput.addEventListener('input', (e) => {
+        currentFilters.searchTerm = e.target.value.trim();
+        applyFiltersAndSort();
     });
+}
+
+// Setup Filters and Sort
+function setupFiltersAndSort() {
+    const filterClass = document.getElementById('filterClass');
+    const filterSection = document.getElementById('filterSection');
+    const sortBy = document.getElementById('sortBy');
+    const clearFiltersBtn = document.getElementById('clearFiltersBtn');
+
+    if (filterClass) {
+        filterClass.addEventListener('change', (e) => {
+            currentFilters.class = e.target.value;
+            applyFiltersAndSort();
+        });
+    }
+
+    if (filterSection) {
+        filterSection.addEventListener('change', (e) => {
+            currentFilters.section = e.target.value;
+            applyFiltersAndSort();
+        });
+    }
+
+    if (sortBy) {
+        sortBy.addEventListener('change', (e) => {
+            currentFilters.sortBy = e.target.value;
+            applyFiltersAndSort();
+        });
+    }
+
+    if (clearFiltersBtn) {
+        clearFiltersBtn.addEventListener('click', () => {
+            // Reset all filters
+            currentFilters = {
+                class: '',
+                section: '',
+                sortBy: '',
+                searchTerm: ''
+            };
+            
+            // Reset UI
+            if (filterClass) filterClass.value = '';
+            if (filterSection) filterSection.value = '';
+            if (sortBy) sortBy.value = '';
+            document.getElementById('searchInput').value = '';
+            
+            // Update view
+            applyFiltersAndSort();
+            showNotification('Filters cleared', 'success');
+        });
+    }
 }
 
 function getInitials(firstName, lastName) {
@@ -317,6 +445,9 @@ function getInitials(firstName, lastName) {
 function showStudentProfile(studentId) {
     const student = studentManager.getStudent(studentId);
     if (!student) return;
+
+    // Store current profile student ID for delete functionality
+    currentProfileStudentId = studentId;
 
     // Update profile picture
     const profilePicture = document.getElementById('profilePicture');
@@ -482,6 +613,15 @@ class FormValidator {
 let currentImageData = null;
 let editImageData = null;
 let currentEditingStudentId = null;
+let currentProfileStudentId = null;
+
+// Filter and sort state
+let currentFilters = {
+    class: '',
+    section: '',
+    sortBy: '',
+    searchTerm: ''
+};
 
 // Add Student Form Handler
 function setupAddStudentForm() {
@@ -928,16 +1068,96 @@ function setupNavigation() {
         showView('homeView');
         clearSearch();
     });
+
+    // Print Student button
+    const printStudentBtn = document.getElementById('printStudentBtn');
+    if (printStudentBtn) {
+        printStudentBtn.addEventListener('click', () => {
+            if (!currentProfileStudentId) return;
+            
+            const student = studentManager.getStudent(currentProfileStudentId);
+            if (!student) return;
+
+            // Add print date to profile card
+            const profileCard = document.querySelector('.profile-card');
+            if (profileCard) {
+                const currentDate = new Date().toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+                profileCard.setAttribute('data-print-date', currentDate);
+            }
+
+            // Trigger print dialog
+            window.print();
+            
+            showNotification('Print dialog opened', 'success');
+        });
+    }
+
+    // Delete Student button
+    const deleteStudentBtn = document.getElementById('deleteStudentBtn');
+    if (deleteStudentBtn) {
+        deleteStudentBtn.addEventListener('click', () => {
+            if (!currentProfileStudentId) return;
+            
+            const student = studentManager.getStudent(currentProfileStudentId);
+            if (!student) return;
+
+            // Show confirmation dialog
+            const confirmed = confirm(
+                `Are you sure you want to delete ${student.firstName} ${student.lastName}?\n\n` +
+                `Roll Number: ${student.rollNo}\n` +
+                `Class: ${student.class} - ${student.section}\n\n` +
+                `This action cannot be undone!`
+            );
+
+            if (confirmed) {
+                deleteStudent(currentProfileStudentId);
+            }
+        });
+    }
 }
 
-// Clear search input
+// Delete student function
+async function deleteStudent(studentId) {
+    try {
+        await studentManager.deleteStudent(studentId);
+        showNotification('Student deleted successfully!', 'success');
+        currentProfileStudentId = null;
+        showView('homeView');
+        await renderStudentsList();
+    } catch (error) {
+        showNotification(error.message || 'Error deleting student. Please try again.', 'error');
+        console.error('Error deleting student:', error);
+    }
+}
+
+// Clear search input and filters
 function clearSearch() {
     const searchInput = document.getElementById('searchInput');
     const searchResultsInfo = document.getElementById('searchResultsInfo');
-    if (searchInput) {
-        searchInput.value = '';
-        searchResultsInfo.textContent = '';
-    }
+    
+    // Reset filters
+    currentFilters = {
+        class: '',
+        section: '',
+        sortBy: '',
+        searchTerm: ''
+    };
+    
+    // Reset UI
+    if (searchInput) searchInput.value = '';
+    if (searchResultsInfo) searchResultsInfo.textContent = '';
+    
+    const filterClass = document.getElementById('filterClass');
+    const filterSection = document.getElementById('filterSection');
+    const sortBy = document.getElementById('sortBy');
+    
+    if (filterClass) filterClass.value = '';
+    if (filterSection) filterSection.value = '';
+    if (sortBy) sortBy.value = '';
 }
 
 // Initialize Application
@@ -948,6 +1168,7 @@ async function init() {
         setupEditStudentForm();
         setupDataManagement();
         setupSearchBar();
+        setupFiltersAndSort();
         await renderStudentsList();
     } catch (error) {
         console.error('Error during initialization:', error);
