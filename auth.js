@@ -274,5 +274,7 @@ class AttendanceManager {
 }
 
 // Initialize Auth and Attendance Managers
+// Note: These are global instances used across the application
 const authManager = new AuthManager();
 const attendanceManager = new AttendanceManager();
+
