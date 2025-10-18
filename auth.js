@@ -276,4 +276,3 @@ class AttendanceManager {
 // Initialize Auth and Attendance Managers
 const authManager = new AuthManager();
 const attendanceManager = new AttendanceManager();
-
