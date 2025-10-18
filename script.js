@@ -1160,16 +1160,583 @@ function clearSearch() {
     if (sortBy) sortBy.value = '';
 }
 
+// Setup Login
+function setupLogin() {
+    const loginForm = document.getElementById('loginForm');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const userInfoBar = document.getElementById('userInfoBar');
+
+    if (loginForm) {
+        loginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const username = document.getElementById('loginUsername').value.trim();
+            const password = document.getElementById('loginPassword').value;
+
+            const result = authManager.login(username, password);
+
+            if (result.success) {
+                showNotification(`Welcome, ${result.user.name}!`, 'success');
+                
+                // Update user info bar
+                document.getElementById('currentUserName').textContent = result.user.name;
+                document.getElementById('currentUserRole').textContent = authManager.getRoleDisplay();
+                userInfoBar.style.display = 'flex';
+
+                // Show home view
+                showView('homeView');
+                renderStudentsList();
+
+                // Update UI based on permissions
+                updateUIForRole();
+            } else {
+                showNotification(result.error, 'error');
+            }
+        });
+    }
+
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', () => {
+            authManager.logout();
+            userInfoBar.style.display = 'none';
+            showView('loginView');
+            showNotification('Logged out successfully', 'success');
+        });
+    }
+
+    // Check if already logged in
+    if (authManager.isLoggedIn()) {
+        const user = authManager.getCurrentUser();
+        document.getElementById('currentUserName').textContent = user.name;
+        document.getElementById('currentUserRole').textContent = authManager.getRoleDisplay();
+        userInfoBar.style.display = 'flex';
+        showView('homeView');
+        updateUIForRole();
+    }
+}
+
+// Update UI based on user role
+function updateUIForRole() {
+    const user = authManager.getCurrentUser();
+    if (!user) return;
+
+    const addStudentBtn = document.getElementById('addStudentBtn');
+    const deleteStudentBtn = document.getElementById('deleteStudentBtn');
+    const exportDataBtn = document.getElementById('exportDataBtn');
+    const importDataBtn = document.getElementById('importDataBtn');
+    const attendanceViewBtn = document.getElementById('attendanceViewBtn');
+    const manageUsersBtn = document.getElementById('manageUsersBtn');
+
+    // Show manage users button only for admins
+    if (user.role === 'admin') {
+        if (manageUsersBtn) manageUsersBtn.style.display = 'inline-flex';
+    }
+
+    // Teachers can't add/delete students
+    if (user.role === 'teacher') {
+        if (addStudentBtn) addStudentBtn.style.display = 'none';
+        if (deleteStudentBtn) deleteStudentBtn.style.display = 'none';
+    } else if (user.role === 'student') {
+        if (addStudentBtn) addStudentBtn.style.display = 'none';
+        if (deleteStudentBtn) deleteStudentBtn.style.display = 'none';
+        if (exportDataBtn) exportDataBtn.style.display = 'none';
+        if (importDataBtn) importDataBtn.style.display = 'none';
+        if (attendanceViewBtn) attendanceViewBtn.style.display = 'none';
+    }
+}
+
+// Setup Attendance Tracking
+function setupAttendance() {
+    const attendanceViewBtn = document.getElementById('attendanceViewBtn');
+    const backFromAttendanceBtn = document.getElementById('backFromAttendanceBtn');
+    const backFromHistoryBtn = document.getElementById('backFromHistoryBtn');
+    const attendanceDate = document.getElementById('attendanceDate');
+    const todayBtn = document.getElementById('todayBtn');
+    const viewAttendanceBtn = document.getElementById('viewAttendanceBtn');
+
+    if (attendanceViewBtn) {
+        attendanceViewBtn.addEventListener('click', () => {
+            showView('attendanceView');
+            const today = attendanceManager.getTodayDate();
+            document.getElementById('attendanceDate').value = today;
+            renderAttendanceList(today);
+        });
+    }
+
+    if (backFromAttendanceBtn) {
+        backFromAttendanceBtn.addEventListener('click', () => {
+            showView('homeView');
+        });
+    }
+
+    if (backFromHistoryBtn) {
+        backFromHistoryBtn.addEventListener('click', () => {
+            showView('profileView');
+        });
+    }
+
+    if (attendanceDate) {
+        attendanceDate.addEventListener('change', (e) => {
+            renderAttendanceList(e.target.value);
+        });
+    }
+
+    if (todayBtn) {
+        todayBtn.addEventListener('click', () => {
+            const today = attendanceManager.getTodayDate();
+            document.getElementById('attendanceDate').value = today;
+            renderAttendanceList(today);
+        });
+    }
+
+    if (viewAttendanceBtn) {
+        viewAttendanceBtn.addEventListener('click', () => {
+            if (currentProfileStudentId) {
+                showAttendanceHistory(currentProfileStudentId);
+            }
+        });
+    }
+}
+
+// Render Attendance List
+function renderAttendanceList(date) {
+    const students = studentManager.getAllStudents();
+    const attendanceList = document.getElementById('attendanceList');
+    const statsSummary = document.getElementById('attendanceStatsSummary');
+
+    if (!attendanceList) return;
+
+    if (students.length === 0) {
+        attendanceList.innerHTML = '<div style="text-align: center; padding: 3rem; color: var(--text-secondary);">No students to track attendance for.</div>';
+        return;
+    }
+
+    // Get today's attendance
+    const dateAttendance = attendanceManager.getDateAttendance(date);
+    const stats = {
+        present: 0,
+        absent: 0,
+        late: 0,
+        excused: 0,
+        unmarked: 0
+    };
+
+    attendanceList.innerHTML = students.map(student => {
+        const todayStatus = dateAttendance.find(a => a.studentId === student.id)?.status || null;
+        
+        if (todayStatus) {
+            stats[todayStatus]++;
+        } else {
+            stats.unmarked++;
+        }
+
+        return `
+            <div class="attendance-item" data-student-id="${student.id}">
+                <div class="attendance-student-info">
+                    <div class="attendance-student-avatar">
+                        ${student.picture ? 
+                            `<img src="${student.picture}" alt="${student.firstName}">` : 
+                            `<span>${getInitials(student.firstName, student.lastName)}</span>`
+                        }
+                    </div>
+                    <div class="attendance-student-details">
+                        <h4>${student.firstName} ${student.lastName}</h4>
+                        <p>Roll: ${student.rollNo} | Class ${student.class} - ${student.section}</p>
+                    </div>
+                </div>
+                <div class="attendance-status-buttons">
+                    <button class="attendance-btn present ${todayStatus === 'present' ? 'active' : ''}" 
+                            data-student-id="${student.id}" data-status="present">
+                        ✓ Present
+                    </button>
+                    <button class="attendance-btn absent ${todayStatus === 'absent' ? 'active' : ''}" 
+                            data-student-id="${student.id}" data-status="absent">
+                        ✗ Absent
+                    </button>
+                    <button class="attendance-btn late ${todayStatus === 'late' ? 'active' : ''}" 
+                            data-student-id="${student.id}" data-status="late">
+                        ⏰ Late
+                    </button>
+                    <button class="attendance-btn excused ${todayStatus === 'excused' ? 'active' : ''}" 
+                            data-student-id="${student.id}" data-status="excused">
+                        📋 Excused
+                    </button>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    // Add click listeners to attendance buttons
+    document.querySelectorAll('.attendance-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const studentId = this.dataset.studentId;
+            const status = this.dataset.status;
+            const date = document.getElementById('attendanceDate').value;
+            
+            // Mark attendance
+            const user = authManager.getCurrentUser();
+            attendanceManager.markAttendance(studentId, date, status, user.name);
+
+            // Update UI - remove active from all buttons for this student
+            const item = this.closest('.attendance-item');
+            item.querySelectorAll('.attendance-btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+
+            showNotification('Attendance marked successfully', 'success');
+            
+            // Update stats
+            renderAttendanceList(date);
+        });
+    });
+
+    // Update stats summary
+    if (statsSummary) {
+        statsSummary.innerHTML = `
+            <div class="stat-badge">
+                <span class="stat-badge-value" style="color: var(--success-color);">${stats.present}</span>
+                <span class="stat-badge-label">Present</span>
+            </div>
+            <div class="stat-badge">
+                <span class="stat-badge-value" style="color: var(--error-color);">${stats.absent}</span>
+                <span class="stat-badge-label">Absent</span>
+            </div>
+            <div class="stat-badge">
+                <span class="stat-badge-value" style="color: var(--warning-color);">${stats.late}</span>
+                <span class="stat-badge-label">Late</span>
+            </div>
+            <div class="stat-badge">
+                <span class="stat-badge-value" style="color: var(--secondary-color);">${stats.excused}</span>
+                <span class="stat-badge-label">Excused</span>
+            </div>
+            <div class="stat-badge">
+                <span class="stat-badge-value" style="color: var(--text-secondary);">${stats.unmarked}</span>
+                <span class="stat-badge-label">Unmarked</span>
+            </div>
+        `;
+    }
+}
+
+// Show Attendance History
+function showAttendanceHistory(studentId) {
+    const student = studentManager.getStudent(studentId);
+    if (!student) return;
+
+    // Update header
+    document.getElementById('historyStudentName').textContent = 
+        `Attendance History - ${student.firstName} ${student.lastName}`;
+
+    // Get attendance stats (last 30 days)
+    const today = new Date();
+    const thirtyDaysAgo = new Date(today);
+    thirtyDaysAgo.setDate(today.getDate() - 30);
+    
+    const startDate = thirtyDaysAgo.toISOString().split('T')[0];
+    const endDate = today.toISOString().split('T')[0];
+    
+    const stats = attendanceManager.getAttendanceStats(studentId, startDate, endDate);
+    const records = attendanceManager.getStudentAttendance(studentId, startDate, endDate);
+
+    // Render stats
+    const statsCard = document.getElementById('attendanceStatsCard');
+    if (statsCard) {
+        statsCard.innerHTML = `
+            <h3 style="margin-bottom: 1rem; color: var(--text-primary);">Last 30 Days Statistics</h3>
+            <div class="attendance-percentage">${stats.percentage}%</div>
+            <p style="text-align: center; color: var(--text-secondary); margin-bottom: 1.5rem;">
+                Attendance Rate
+            </p>
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-item-value present">${stats.present}</div>
+                    <div class="stat-item-label">Present</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-item-value absent">${stats.absent}</div>
+                    <div class="stat-item-label">Absent</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-item-value late">${stats.late}</div>
+                    <div class="stat-item-label">Late</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-item-value excused">${stats.excused}</div>
+                    <div class="stat-item-label">Excused</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-item-value">${stats.total}</div>
+                    <div class="stat-item-label">Total Days</div>
+                </div>
+            </div>
+        `;
+    }
+
+    // Render history
+    const historyList = document.getElementById('attendanceHistoryList');
+    if (historyList) {
+        if (records.length === 0) {
+            historyList.innerHTML = '<div style="text-align: center; padding: 3rem; color: var(--text-secondary);">No attendance records found for the last 30 days.</div>';
+        } else {
+            historyList.innerHTML = records.map(record => `
+                <div class="history-item">
+                    <span class="history-date">${formatDate(record.date)}</span>
+                    <span class="history-status ${record.status}">${record.status.toUpperCase()}</span>
+                </div>
+            `).join('');
+        }
+    }
+
+    showView('attendanceHistoryView');
+}
+
+// Setup User Management
+function setupUserManagement() {
+    const manageUsersBtn = document.getElementById('manageUsersBtn');
+    const backFromUsersBtn = document.getElementById('backFromUsersBtn');
+    const addUserBtn = document.getElementById('addUserBtn');
+    const backFromAddUserBtn = document.getElementById('backFromAddUserBtn');
+    const cancelUserBtn = document.getElementById('cancelUserBtn');
+    const addUserForm = document.getElementById('addUserForm');
+    const userRoleSelect = document.getElementById('userRole');
+    const roleDescription = document.getElementById('roleDescription');
+
+    if (manageUsersBtn) {
+        manageUsersBtn.addEventListener('click', () => {
+            showView('userManagementView');
+            renderUsersList();
+        });
+    }
+
+    if (backFromUsersBtn) {
+        backFromUsersBtn.addEventListener('click', () => {
+            showView('homeView');
+        });
+    }
+
+    if (addUserBtn) {
+        addUserBtn.addEventListener('click', () => {
+            showView('addUserView');
+            resetAddUserForm();
+        });
+    }
+
+    if (backFromAddUserBtn) {
+        backFromAddUserBtn.addEventListener('click', () => {
+            showView('userManagementView');
+            renderUsersList();
+        });
+    }
+
+    if (cancelUserBtn) {
+        cancelUserBtn.addEventListener('click', () => {
+            showView('userManagementView');
+            renderUsersList();
+        });
+    }
+
+    // Show role description when role is selected
+    if (userRoleSelect && roleDescription) {
+        userRoleSelect.addEventListener('change', (e) => {
+            const role = e.target.value;
+            
+            const descriptions = {
+                admin: {
+                    title: '👑 Administrator',
+                    permissions: [
+                        'Add, edit, and delete students',
+                        'Mark attendance',
+                        'View attendance reports',
+                        'Export and import data',
+                        'Manage user accounts',
+                        'Full system access'
+                    ]
+                },
+                teacher: {
+                    title: '👨‍🏫 Teacher',
+                    permissions: [
+                        'View all students',
+                        'Edit student information',
+                        'Mark attendance',
+                        'View attendance reports',
+                        'Cannot delete students or manage users'
+                    ]
+                },
+                student: {
+                    title: '🎓 Student',
+                    permissions: [
+                        'View all students',
+                        'View own attendance history',
+                        'Cannot edit or delete',
+                        'Read-only access'
+                    ]
+                }
+            };
+
+            if (role && descriptions[role]) {
+                const desc = descriptions[role];
+                roleDescription.innerHTML = `
+                    <h4>${desc.title} Permissions:</h4>
+                    <ul>
+                        ${desc.permissions.map(p => `<li>${p}</li>`).join('')}
+                    </ul>
+                `;
+                roleDescription.classList.add('visible');
+            } else {
+                roleDescription.classList.remove('visible');
+            }
+        });
+    }
+
+    // Handle add user form submission
+    if (addUserForm) {
+        addUserForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            const name = document.getElementById('userName').value.trim();
+            const email = document.getElementById('userEmail').value.trim();
+            const username = document.getElementById('userUsername').value.trim();
+            const password = document.getElementById('userPassword').value;
+            const role = document.getElementById('userRole').value;
+
+            // Validate
+            if (!name || !email || !username || !password || !role) {
+                showNotification('Please fill in all fields', 'error');
+                return;
+            }
+
+            if (password.length < 6) {
+                showNotification('Password must be at least 6 characters', 'error');
+                return;
+            }
+
+            // Create user
+            const result = authManager.addUser({
+                name,
+                email,
+                username,
+                password,
+                role
+            });
+
+            if (result.success) {
+                showNotification('User created successfully!', 'success');
+                showView('userManagementView');
+                renderUsersList();
+                resetAddUserForm();
+            } else {
+                showNotification(result.error, 'error');
+            }
+        });
+    }
+}
+
+// Render users list
+function renderUsersList() {
+    const container = document.getElementById('usersListContainer');
+    if (!container) return;
+
+    const users = authManager.getAllUsers();
+
+    if (users.length === 0) {
+        container.innerHTML = '<div style="text-align: center; padding: 3rem; color: var(--text-secondary);">No users found.</div>';
+        return;
+    }
+
+    container.innerHTML = users.map(user => {
+        const roleIcons = {
+            admin: '👑',
+            teacher: '👨‍🏫',
+            student: '🎓'
+        };
+
+        const canDelete = user.id !== '1' && user.id !== authManager.getCurrentUser()?.id;
+
+        return `
+            <div class="user-card">
+                ${canDelete ? `<button class="user-delete-btn" data-user-id="${user.id}" title="Delete User">🗑️</button>` : ''}
+                <div class="user-card-header">
+                    <div class="user-avatar">${roleIcons[user.role] || '👤'}</div>
+                    <div class="user-info-content">
+                        <h3>${user.name}</h3>
+                        <p>${user.email}</p>
+                        <span class="user-role-badge ${user.role}">${user.role}</span>
+                    </div>
+                </div>
+                <div class="user-card-details">
+                    <div class="user-detail-row">
+                        <span>Username:</span>
+                        <span>${user.username}</span>
+                    </div>
+                    <div class="user-detail-row">
+                        <span>Password:</span>
+                        <span>${user.password}</span>
+                    </div>
+                    ${user.createdAt ? `
+                        <div class="user-detail-row">
+                            <span>Created:</span>
+                            <span>${new Date(user.createdAt).toLocaleDateString()}</span>
+                        </div>
+                    ` : ''}
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    // Add delete listeners
+    document.querySelectorAll('.user-delete-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const userId = btn.dataset.userId;
+            const user = authManager.users.find(u => u.id === userId);
+            
+            if (!user) return;
+
+            const confirmed = confirm(
+                `Are you sure you want to delete user "${user.name}"?\n\n` +
+                `Username: ${user.username}\n` +
+                `Role: ${user.role}\n\n` +
+                `This action cannot be undone!`
+            );
+
+            if (confirmed) {
+                const result = authManager.deleteUser(userId);
+                if (result.success) {
+                    showNotification('User deleted successfully', 'success');
+                    renderUsersList();
+                } else {
+                    showNotification(result.error, 'error');
+                }
+            }
+        });
+    });
+}
+
+// Reset add user form
+function resetAddUserForm() {
+    const form = document.getElementById('addUserForm');
+    const roleDescription = document.getElementById('roleDescription');
+    
+    if (form) {
+        form.reset();
+        roleDescription.classList.remove('visible');
+    }
+}
+
 // Initialize Application
 async function init() {
     try {
+        setupLogin();
         setupNavigation();
         setupAddStudentForm();
         setupEditStudentForm();
         setupDataManagement();
         setupSearchBar();
         setupFiltersAndSort();
-        await renderStudentsList();
+        setupAttendance();
+        setupUserManagement();
+        
+        // Only render if logged in
+        if (authManager.isLoggedIn()) {
+            await renderStudentsList();
+        }
     } catch (error) {
         console.error('Error during initialization:', error);
     }
@@ -1181,3 +1748,4 @@ if (document.readyState === 'loading') {
 } else {
     init();
 }
+
