@@ -167,10 +167,10 @@ class StudentManager {
     }
 }
 
-// Global instances - MUST be created first
+// Global instances
+// Note: authManager and attendanceManager are created in auth.js
+// studentManager is created here because StudentManager class is in this file
 const studentManager = new StudentManager();
-const authManager = new AuthManager();
-const attendanceManager = new AttendanceManager();
 
 // View Management
 function showView(viewId) {
@@ -1400,7 +1400,7 @@ function renderAttendanceList(date) {
             </div>
             <div class="stat-badge">
                 <span class="stat-badge-value" style="color: var(--error-color);">${stats.absent}</span>
-                <span class=" Statistical-badge-label">Absent</span>
+                <span class="stat-badge-label">Absent</span>
             </div>
             <div class="stat-badge">
                 <span class="stat-badge-value" style="color: var(--warning-color);">${stats.late}</span>
