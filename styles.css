@@ -129,7 +129,8 @@ body {
 /* Buttons */
 .btn-primary,
 .btn-secondary,
-.btn-back {
+.btn-back,
+.btn-delete {
     padding: 0.75rem 1.5rem;
     border: none;
     border-radius: 0.5rem;
@@ -172,6 +173,33 @@ body {
 .btn-back:hover {
     background: var(--bg-color);
     color: var(--text-primary);
+}
+
+.btn-delete {
+    background: var(--error-color);
+    color: white;
+}
+
+.btn-delete:hover {
+    background: #dc2626;
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+}
+
+.btn-print {
+    background: var(--success-color);
+    color: white;
+}
+
+.btn-print:hover {
+    background: #059669;
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+}
+
+.profile-actions {
+    display: flex;
+    gap: 0.75rem;
 }
 
 .btn-icon {
@@ -228,6 +256,78 @@ body {
     color: var(--text-secondary);
     font-size: 0.875rem;
     font-weight: 500;
+}
+
+/* Filters Bar */
+.filters-bar {
+    background: var(--card-bg);
+    border-radius: 0.5rem;
+    padding: 1rem 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-color);
+}
+
+.filters-group {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-end;
+    flex-wrap: wrap;
+}
+
+.filter-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    flex: 1;
+    min-width: 150px;
+}
+
+.filter-item label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.filter-select {
+    padding: 0.625rem 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+    background: white;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.filter-select:hover {
+    border-color: var(--primary-color);
+}
+
+.filter-select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.btn-clear-filters {
+    padding: 0.625rem 1.25rem;
+    background: var(--bg-color);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    align-self: flex-end;
+}
+
+.btn-clear-filters:hover {
+    background: var(--error-color);
+    color: white;
+    border-color: var(--error-color);
 }
 
 /* Students Grid */
@@ -810,5 +910,111 @@ body {
 
     .upload-text {
         font-size: 0.875rem;
+    }
+
+    .filters-group {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .filter-item {
+        min-width: 100%;
+    }
+
+    .btn-clear-filters {
+        align-self: stretch;
+    }
+}
+
+/* Print Styles */
+@media print {
+    /* Hide everything except profile view */
+    body * {
+        visibility: hidden;
+    }
+    
+    #profileView,
+    #profileView * {
+        visibility: visible;
+    }
+    
+    #profileView {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+    }
+    
+    /* Hide navigation buttons */
+    .header,
+    .btn-back,
+    .btn-delete,
+    .btn-print,
+    .profile-actions {
+        display: none !important;
+    }
+    
+    /* Optimize profile card for printing */
+    .container {
+        max-width: 100%;
+        padding: 20px;
+        margin: 0;
+    }
+    
+    .profile-card {
+        box-shadow: none;
+        border: 2px solid #000;
+        page-break-inside: avoid;
+    }
+    
+    .profile-header {
+        background: #6366f1 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+        padding: 40px 30px;
+    }
+    
+    .profile-picture {
+        border: 3px solid #fff;
+    }
+    
+    .profile-details {
+        padding: 30px;
+    }
+    
+    .detail-item {
+        padding: 15px 0;
+        border-bottom: 1px solid #e2e8f0;
+    }
+    
+    /* Add print header */
+    .profile-card::before {
+        content: "STUDENT PROFILE";
+        display: block;
+        text-align: center;
+        font-size: 24px;
+        font-weight: bold;
+        color: #1e293b;
+        padding: 20px 0;
+        border-bottom: 3px solid #6366f1;
+        margin-bottom: 0;
+    }
+    
+    /* Add print footer */
+    .profile-card::after {
+        content: "Generated on " attr(data-print-date);
+        display: block;
+        text-align: center;
+        font-size: 12px;
+        color: #64748b;
+        padding: 20px 0;
+        border-top: 1px solid #e2e8f0;
+        margin-top: 20px;
+    }
+    
+    /* Ensure colors print correctly */
+    * {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
     }
 }
