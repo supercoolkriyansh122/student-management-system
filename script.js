@@ -228,9 +228,12 @@ async function renderStudentsList(filteredStudents = null) {
             }
         } else {
             emptyState.classList.remove('visible');
-            studentsList.innerHTML = students.map(student => `
+            studentsList.innerHTML = students.map(student => {
+                const currentUser = authManager.getCurrentUser();
+                const canEdit = currentUser && (currentUser.role === 'admin' || currentUser.role === 'teacher');
+                return `
                 <div class="student-card" data-id="${student.id}">
-                    <button class="student-edit-btn" data-id="${student.id}" title="Edit Student">✏️</button>
+                    ${canEdit ? `<button class="student-edit-btn" data-id="${student.id}" title="Edit Student">✏️</button>` : ''}
                     <div class="student-card-header">
                         <div class="student-avatar">
                             ${student.picture ? 
@@ -253,7 +256,8 @@ async function renderStudentsList(filteredStudents = null) {
                         </div>
                     </div>
                 </div>
-            `).join('');
+                `;
+            }).join('');
 
             // Add click listeners to cards and staggered animations
             document.querySelectorAll('.student-card').forEach((card, index) => {
@@ -1228,22 +1232,30 @@ function updateUIForRole() {
     const importDataBtn = document.getElementById('importDataBtn');
     const attendanceViewBtn = document.getElementById('attendanceViewBtn');
     const manageUsersBtn = document.getElementById('manageUsersBtn');
+    const createClassBtn = document.getElementById('createClassBtn');
 
     // Show manage users button only for admins
     if (user.role === 'admin') {
         if (manageUsersBtn) manageUsersBtn.style.display = 'inline-flex';
+        if (createClassBtn) createClassBtn.style.display = 'inline-flex';
     }
 
-    // Teachers can't add/delete students
+    // Teachers can't add/delete students but can manage classes and attendance
     if (user.role === 'teacher') {
         if (addStudentBtn) addStudentBtn.style.display = 'none';
         if (deleteStudentBtn) deleteStudentBtn.style.display = 'none';
+        if (exportDataBtn) exportDataBtn.style.display = 'none';
+        if (importDataBtn) importDataBtn.style.display = 'none';
+        if (createClassBtn) createClassBtn.style.display = 'inline-flex';
     } else if (user.role === 'student') {
+        // Students can only view profiles - no editing, managing, or adding
         if (addStudentBtn) addStudentBtn.style.display = 'none';
         if (deleteStudentBtn) deleteStudentBtn.style.display = 'none';
         if (exportDataBtn) exportDataBtn.style.display = 'none';
         if (importDataBtn) importDataBtn.style.display = 'none';
         if (attendanceViewBtn) attendanceViewBtn.style.display = 'none';
+        if (manageUsersBtn) manageUsersBtn.style.display = 'none';
+        if (createClassBtn) createClassBtn.style.display = 'none';
     }
 }
 
@@ -1723,6 +1735,337 @@ function resetAddUserForm() {
 }
 
 
+// Class Management Functions
+class ClassManager {
+    constructor() {
+        this.classes = this.loadClasses();
+    }
+    
+    loadClasses() {
+        const saved = localStorage.getItem('classes');
+        return saved ? JSON.parse(saved) : [];
+    }
+    
+    saveClasses() {
+        localStorage.setItem('classes', JSON.stringify(this.classes));
+    }
+    
+    addClass(classData) {
+        const newClass = {
+            id: Date.now().toString(),
+            ...classData,
+            students: [],
+            createdAt: new Date().toISOString()
+        };
+        this.classes.push(newClass);
+        this.saveClasses();
+        return newClass;
+    }
+    
+    getClass(classId) {
+        return this.classes.find(c => c.id === classId);
+    }
+    
+    getAllClasses() {
+        return this.classes;
+    }
+    
+    updateClass(classId, updates) {
+        const classIndex = this.classes.findIndex(c => c.id === classId);
+        if (classIndex !== -1) {
+            this.classes[classIndex] = { ...this.classes[classIndex], ...updates };
+            this.saveClasses();
+            return this.classes[classIndex];
+        }
+        return null;
+    }
+    
+    addStudentToClass(classId, studentId) {
+        const classObj = this.getClass(classId);
+        if (classObj && !classObj.students.includes(studentId)) {
+            classObj.students.push(studentId);
+            this.saveClasses();
+            return true;
+        }
+        return false;
+    }
+    
+    removeStudentFromClass(classId, studentId) {
+        const classObj = this.getClass(classId);
+        if (classObj) {
+            classObj.students = classObj.students.filter(id => id !== studentId);
+            this.saveClasses();
+            return true;
+        }
+        return false;
+    }
+    
+    deleteClass(classId) {
+        this.classes = this.classes.filter(c => c.id !== classId);
+        this.saveClasses();
+    }
+}
+
+// Global class manager instance
+const classManager = new ClassManager();
+
+// Setup Class Management
+function setupClassManagement() {
+    const createClassBtn = document.getElementById('createClassBtn');
+    const backFromCreateClassBtn = document.getElementById('backFromCreateClassBtn');
+    const cancelCreateClassBtn = document.getElementById('cancelCreateClassBtn');
+    const createClassForm = document.getElementById('createClassForm');
+    const backFromClassManagementBtn = document.getElementById('backFromClassManagementBtn');
+    
+    // Create Class button
+    if (createClassBtn) {
+        createClassBtn.addEventListener('click', () => {
+            showView('createClassView');
+        });
+    }
+    
+    // Back from Create Class
+    if (backFromCreateClassBtn) {
+        backFromCreateClassBtn.addEventListener('click', () => {
+            showView('homeView');
+        });
+    }
+    
+    // Cancel Create Class
+    if (cancelCreateClassBtn) {
+        cancelCreateClassBtn.addEventListener('click', () => {
+            showView('homeView');
+        });
+    }
+    
+    // Back from Class Management
+    if (backFromClassManagementBtn) {
+        backFromClassManagementBtn.addEventListener('click', () => {
+            showView('homeView');
+        });
+    }
+    
+    // Create Class Form
+    if (createClassForm) {
+        createClassForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(createClassForm);
+            const classData = {
+                className: formData.get('className').trim(),
+                classSection: formData.get('classSection'),
+                classTeacher: formData.get('classTeacher').trim(),
+                classRoom: formData.get('classRoom').trim(),
+                classDescription: formData.get('classDescription').trim()
+            };
+            
+            try {
+                const newClass = classManager.addClass(classData);
+                showNotification('Class created successfully!', 'success');
+                createClassForm.reset();
+                showView('homeView');
+                await renderStudentsList(); // Refresh to show class options
+            } catch (error) {
+                showNotification('Error creating class. Please try again.', 'error');
+                console.error('Error creating class:', error);
+            }
+        });
+    }
+}
+
+// Show Class Management
+function showClassManagement(classId) {
+    const classObj = classManager.getClass(classId);
+    if (!classObj) return;
+    
+    const classInfoCard = document.getElementById('classInfoCard');
+    const classStudentsList = document.getElementById('classStudentsList');
+    
+    // Display class information
+    classInfoCard.innerHTML = `
+        <div class="class-info-header">
+            <h2 class="class-info-title">${classObj.className}</h2>
+            <div class="class-actions">
+                <button id="editClassBtn" class="btn-secondary">✏️ Edit Class</button>
+                <button id="printClassBtn" class="btn-secondary">🖨️ Print Class</button>
+            </div>
+        </div>
+        <div class="class-info-details">
+            <div class="class-detail-item">
+                <span class="class-detail-label">Section</span>
+                <span class="class-detail-value">${classObj.classSection}</span>
+            </div>
+            <div class="class-detail-item">
+                <span class="class-detail-label">Class Teacher</span>
+                <span class="class-detail-value">${classObj.classTeacher || 'Not assigned'}</span>
+            </div>
+            <div class="class-detail-item">
+                <span class="class-detail-label">Room</span>
+                <span class="class-detail-value">${classObj.classRoom || 'Not assigned'}</span>
+            </div>
+            <div class="class-detail-item">
+                <span class="class-detail-label">Students</span>
+                <span class="class-detail-value">${classObj.students.length}</span>
+            </div>
+        </div>
+        ${classObj.classDescription ? `
+            <div class="class-detail-item" style="margin-top: 1rem;">
+                <span class="class-detail-label">Description</span>
+                <span class="class-detail-value">${classObj.classDescription}</span>
+            </div>
+        ` : ''}
+    `;
+    
+    // Display students in class
+    renderClassStudents(classObj);
+    
+    // Add event listeners for class actions
+    const editClassBtn = document.getElementById('editClassBtn');
+    const printClassBtn = document.getElementById('printClassBtn');
+    
+    if (editClassBtn) {
+        editClassBtn.addEventListener('click', () => {
+            showEditClass(classId);
+        });
+    }
+    
+    if (printClassBtn) {
+        printClassBtn.addEventListener('click', () => {
+            printClass(classId);
+        });
+    }
+    
+    showView('classManagementView');
+}
+
+// Render students in class
+function renderClassStudents(classObj) {
+    const classStudentsList = document.getElementById('classStudentsList');
+    const students = classObj.students.map(studentId => studentManager.getStudent(studentId)).filter(Boolean);
+    
+    if (students.length === 0) {
+        classStudentsList.innerHTML = `
+            <div style="text-align: center; padding: 3rem; color: var(--text-secondary); grid-column: 1/-1;">
+                <h3>No students in this class</h3>
+                <p>Click "Add Student" to add students to this class</p>
+            </div>
+        `;
+    } else {
+        classStudentsList.innerHTML = students.map(student => `
+            <div class="class-student-card" data-id="${student.id}">
+                <div class="class-student-header">
+                    <div class="class-student-avatar">
+                        ${student.picture ? 
+                            `<img src="${student.picture}" alt="${student.firstName}">` : 
+                            `<span>${getInitials(student.firstName, student.lastName)}</span>`
+                        }
+                    </div>
+                    <div class="class-student-info">
+                        <h4 class="class-student-name">${student.firstName} ${student.lastName}</h4>
+                        <p class="class-student-details">Roll: ${student.rollNo} | Class ${student.class}</p>
+                    </div>
+                    <div class="class-student-actions">
+                        <button class="class-student-remove-btn" data-id="${student.id}">Remove</button>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+        
+        // Add event listeners for remove buttons
+        document.querySelectorAll('.class-student-remove-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const studentId = btn.dataset.id;
+                removeStudentFromClass(classObj.id, studentId);
+            });
+        });
+    }
+}
+
+// Remove student from class
+function removeStudentFromClass(classId, studentId) {
+    if (confirm('Are you sure you want to remove this student from the class?')) {
+        classManager.removeStudentFromClass(classId, studentId);
+        const classObj = classManager.getClass(classId);
+        renderClassStudents(classObj);
+        showNotification('Student removed from class', 'success');
+    }
+}
+
+// Print class
+function printClass(classId) {
+    const classObj = classManager.getClass(classId);
+    if (!classObj) return;
+    
+    const students = classObj.students.map(studentId => studentManager.getStudent(studentId)).filter(Boolean);
+    
+    // Create print content
+    const printContent = `
+        <html>
+        <head>
+            <title>Class ${classObj.className} - Student List</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 20px; }
+                .class-header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #000; padding-bottom: 20px; }
+                .class-info { margin-bottom: 20px; }
+                .students-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                .students-table th, .students-table td { border: 1px solid #000; padding: 8px; text-align: left; }
+                .students-table th { background-color: #f0f0f0; }
+                .student-info { display: flex; align-items: center; gap: 10px; }
+                .student-avatar { width: 30px; height: 30px; border-radius: 50%; background: #6366f1; color: white; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; }
+            </style>
+        </head>
+        <body>
+            <div class="class-header">
+                <h1>Class ${classObj.className}</h1>
+                <h2>${classObj.classSection} Section</h2>
+            </div>
+            
+            <div class="class-info">
+                <p><strong>Class Teacher:</strong> ${classObj.classTeacher || 'Not assigned'}</p>
+                <p><strong>Room:</strong> ${classObj.classRoom || 'Not assigned'}</p>
+                <p><strong>Total Students:</strong> ${students.length}</p>
+                <p><strong>Generated on:</strong> ${new Date().toLocaleDateString()}</p>
+            </div>
+            
+            <table class="students-table">
+                <thead>
+                    <tr>
+                        <th>S.No</th>
+                        <th>Student Name</th>
+                        <th>Roll Number</th>
+                        <th>Admission Number</th>
+                        <th>Class</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${students.map((student, index) => `
+                        <tr>
+                            <td>${index + 1}</td>
+                            <td>
+                                <div class="student-info">
+                                    <div class="student-avatar">${getInitials(student.firstName, student.lastName)}</div>
+                                    ${student.firstName} ${student.lastName}
+                                </div>
+                            </td>
+                            <td>${student.rollNo}</td>
+                            <td>${student.admissionNo}</td>
+                            <td>Class ${student.class}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        </body>
+        </html>
+    `;
+    
+    // Open print window
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    printWindow.print();
+}
+
 // Initialize Application
 async function init() {
     try {
@@ -1735,6 +2078,7 @@ async function init() {
         setupFiltersAndSort();
         setupAttendance();
         setupUserManagement();
+        setupClassManagement();
         
         // Only render if logged in
         if (authManager.isLoggedIn()) {
