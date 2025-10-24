@@ -671,12 +671,21 @@
                 </button>
                 <h1>All Classes</h1>
             </div>
-            <button id="createClassFromListBtn" class="btn-primary">
-                <span class="btn-icon">+</span> Create New Class
-            </button>
+            <div class="header-actions">
+                <button id="exportClassesBtn" class="btn-secondary">
+                    📥 Export Classes
+                </button>
+                <button id="importClassesBtn" class="btn-secondary">
+                    📤 Import Classes
+                </button>
+                <button id="createClassFromListBtn" class="btn-primary">
+                    <span class="btn-icon">+</span> Create New Class
+                </button>
+            </div>
         </header>
         
         <div class="container">
+            <input type="file" id="importClassesFileInput" accept=".json" style="display: none;">
             <div id="classesList" class="classes-grid">
                 <!-- Classes will be displayed here -->
             </div>

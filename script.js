@@ -1825,6 +1825,9 @@ function setupClassManagement() {
     const backFromAddStudentToClassBtn = document.getElementById('backFromAddStudentToClassBtn');
     const classSelection = document.getElementById('classSelection');
     const studentSearchInput = document.getElementById('studentSearchInput');
+    const exportClassesBtn = document.getElementById('exportClassesBtn');
+    const importClassesBtn = document.getElementById('importClassesBtn');
+    const importClassesFileInput = document.getElementById('importClassesFileInput');
     
     // View Classes button
     if (viewClassesBtn) {
@@ -1899,6 +1902,30 @@ function setupClassManagement() {
         studentSearchInput.addEventListener('input', (e) => {
             const searchTerm = e.target.value.toLowerCase();
             filterAvailableStudents(searchTerm);
+        });
+    }
+    
+    // Export Classes
+    if (exportClassesBtn) {
+        exportClassesBtn.addEventListener('click', () => {
+            exportClassesData();
+        });
+    }
+    
+    // Import Classes
+    if (importClassesBtn) {
+        importClassesBtn.addEventListener('click', () => {
+            importClassesFileInput.click();
+        });
+    }
+    
+    // Import Classes File Input
+    if (importClassesFileInput) {
+        importClassesFileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                importClassesData(file);
+            }
         });
     }
     
@@ -2232,6 +2259,150 @@ function deleteClass(classId) {
         showNotification('Class deleted successfully', 'success');
         showClassesList(); // Refresh the classes list
     }
+}
+
+// Export Classes Data
+function exportClassesData() {
+    try {
+        const classes = classManager.getAllClasses();
+        const students = studentManager.getAllStudents();
+        
+        // Create export data with classes and their student details
+        const exportData = {
+            version: '1.0',
+            exportDate: new Date().toISOString(),
+            classes: classes.map(classObj => ({
+                ...classObj,
+                studentDetails: classObj.students.map(studentId => {
+                    const student = students.find(s => s.id === studentId);
+                    return student ? {
+                        id: student.id,
+                        firstName: student.firstName,
+                        lastName: student.lastName,
+                        rollNo: student.rollNo,
+                        admissionNo: student.admissionNo,
+                        class: student.class,
+                        section: student.section
+                    } : null;
+                }).filter(Boolean)
+            })),
+            totalClasses: classes.length,
+            totalStudents: students.length
+        };
+        
+        // Create and download file
+        const dataStr = JSON.stringify(exportData, null, 2);
+        const dataBlob = new Blob([dataStr], { type: 'application/json' });
+        const url = URL.createObjectURL(dataBlob);
+        
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `classes-export-${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        
+        showNotification('Classes data exported successfully!', 'success');
+    } catch (error) {
+        console.error('Error exporting classes:', error);
+        showNotification('Error exporting classes data', 'error');
+    }
+}
+
+// Import Classes Data
+function importClassesData(file) {
+    const reader = new FileReader();
+    
+    reader.onload = (e) => {
+        try {
+            const importData = JSON.parse(e.target.result);
+            
+            // Validate import data structure
+            if (!importData.classes || !Array.isArray(importData.classes)) {
+                throw new Error('Invalid file format: classes array not found');
+            }
+            
+            // Confirm import
+            const classCount = importData.classes.length;
+            if (!confirm(`Import ${classCount} classes? This will replace all existing class data.`)) {
+                return;
+            }
+            
+            // Clear existing classes
+            classManager.classes = [];
+            
+            // Import classes
+            let importedCount = 0;
+            let errorCount = 0;
+            
+            importData.classes.forEach(classData => {
+                try {
+                    // Validate required fields
+                    if (!classData.className || !classData.classSection) {
+                        throw new Error(`Invalid class data: missing required fields`);
+                    }
+                    
+                    // Create new class
+                    const newClass = {
+                        id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+                        className: classData.className,
+                        classSection: classData.classSection,
+                        classTeacher: classData.classTeacher || '',
+                        classRoom: classData.classRoom || '',
+                        classDescription: classData.classDescription || '',
+                        students: [], // Will be populated separately
+                        createdAt: classData.createdAt || new Date().toISOString()
+                    };
+                    
+                    classManager.classes.push(newClass);
+                    importedCount++;
+                    
+                    // Import student assignments if available
+                    if (classData.studentDetails && Array.isArray(classData.studentDetails)) {
+                        classData.studentDetails.forEach(studentDetail => {
+                            // Find matching student by roll number
+                            const matchingStudent = studentManager.getAllStudents().find(s => 
+                                s.rollNo === studentDetail.rollNo && 
+                                s.firstName === studentDetail.firstName && 
+                                s.lastName === studentDetail.lastName
+                            );
+                            
+                            if (matchingStudent && !newClass.students.includes(matchingStudent.id)) {
+                                newClass.students.push(matchingStudent.id);
+                            }
+                        });
+                    }
+                } catch (error) {
+                    console.error('Error importing class:', classData.className, error);
+                    errorCount++;
+                }
+            });
+            
+            // Save imported data
+            classManager.saveClasses();
+            
+            // Show results
+            if (errorCount === 0) {
+                showNotification(`Successfully imported ${importedCount} classes!`, 'success');
+            } else {
+                showNotification(`Imported ${importedCount} classes with ${errorCount} errors. Check console for details.`, 'warning');
+            }
+            
+            // Refresh classes list
+            showClassesList();
+            
+        } catch (error) {
+            console.error('Error importing classes:', error);
+            showNotification('Error importing classes data: ' + error.message, 'error');
+        }
+    };
+    
+    reader.onerror = () => {
+        showNotification('Error reading file', 'error');
+    };
+    
+    reader.readAsText(file);
 }
 
 // Print class
