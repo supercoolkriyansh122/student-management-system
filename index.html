@@ -61,8 +61,11 @@
                 <button id="attendanceViewBtn" class="btn-secondary">
                     📊 Attendance
                 </button>
+                <button id="viewClassesBtn" class="btn-secondary" style="display: none;">
+                    🏫 View Classes
+                </button>
                 <button id="createClassBtn" class="btn-secondary" style="display: none;">
-                    🏫 Create Class
+                    ➕ Create Class
                 </button>
                 <button id="addStudentBtn" class="btn-primary">
                     <span class="btn-icon">+</span> Add Student
@@ -654,6 +657,74 @@
                 </div>
                 <div id="classStudentsList" class="students-grid">
                     <!-- Students will be displayed here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Classes List View -->
+    <div id="classesListView" class="view">
+        <header class="header">
+            <div class="header-left">
+                <button id="backFromClassesListBtn" class="btn-back">
+                    <span>←</span> Back
+                </button>
+                <h1>All Classes</h1>
+            </div>
+            <button id="createClassFromListBtn" class="btn-primary">
+                <span class="btn-icon">+</span> Create New Class
+            </button>
+        </header>
+        
+        <div class="container">
+            <div id="classesList" class="classes-grid">
+                <!-- Classes will be displayed here -->
+            </div>
+            <div id="emptyClassesState" class="empty-state">
+                <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                </svg>
+                <h2>No Classes Yet</h2>
+                <p>Click "Create New Class" to add your first class</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Student to Class View -->
+    <div id="addStudentToClassView" class="view">
+        <header class="header">
+            <div class="header-left">
+                <button id="backFromAddStudentToClassBtn" class="btn-back">
+                    <span>←</span> Back
+                </button>
+                <h1>Add Students to Class</h1>
+            </div>
+        </header>
+        
+        <div class="container">
+            <div class="class-selection-section">
+                <h3>Select Class</h3>
+                <select id="classSelection" class="form-select">
+                    <option value="">Choose a class...</option>
+                </select>
+            </div>
+            
+            <div class="students-selection-section" id="studentsSelectionSection" style="display: none;">
+                <h3>Available Students</h3>
+                <div class="search-bar">
+                    <div class="search-input-wrapper">
+                        <span class="search-icon">🔍</span>
+                        <input 
+                            type="text" 
+                            class="search-input" 
+                            id="studentSearchInput" 
+                            placeholder="Search students..."
+                            autocomplete="off"
+                        >
+                    </div>
+                </div>
+                <div id="availableStudentsList" class="students-grid">
+                    <!-- Available students will be displayed here -->
                 </div>
             </div>
         </div>

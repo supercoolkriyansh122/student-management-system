@@ -1232,11 +1232,13 @@ function updateUIForRole() {
     const importDataBtn = document.getElementById('importDataBtn');
     const attendanceViewBtn = document.getElementById('attendanceViewBtn');
     const manageUsersBtn = document.getElementById('manageUsersBtn');
+    const viewClassesBtn = document.getElementById('viewClassesBtn');
     const createClassBtn = document.getElementById('createClassBtn');
 
     // Show manage users button only for admins
     if (user.role === 'admin') {
         if (manageUsersBtn) manageUsersBtn.style.display = 'inline-flex';
+        if (viewClassesBtn) viewClassesBtn.style.display = 'inline-flex';
         if (createClassBtn) createClassBtn.style.display = 'inline-flex';
     }
 
@@ -1246,6 +1248,7 @@ function updateUIForRole() {
         if (deleteStudentBtn) deleteStudentBtn.style.display = 'none';
         if (exportDataBtn) exportDataBtn.style.display = 'none';
         if (importDataBtn) importDataBtn.style.display = 'none';
+        if (viewClassesBtn) viewClassesBtn.style.display = 'inline-flex';
         if (createClassBtn) createClassBtn.style.display = 'inline-flex';
     } else if (user.role === 'student') {
         // Students can only view profiles - no editing, managing, or adding
@@ -1812,10 +1815,23 @@ const classManager = new ClassManager();
 // Setup Class Management
 function setupClassManagement() {
     const createClassBtn = document.getElementById('createClassBtn');
+    const viewClassesBtn = document.getElementById('viewClassesBtn');
     const backFromCreateClassBtn = document.getElementById('backFromCreateClassBtn');
     const cancelCreateClassBtn = document.getElementById('cancelCreateClassBtn');
     const createClassForm = document.getElementById('createClassForm');
     const backFromClassManagementBtn = document.getElementById('backFromClassManagementBtn');
+    const backFromClassesListBtn = document.getElementById('backFromClassesListBtn');
+    const createClassFromListBtn = document.getElementById('createClassFromListBtn');
+    const backFromAddStudentToClassBtn = document.getElementById('backFromAddStudentToClassBtn');
+    const classSelection = document.getElementById('classSelection');
+    const studentSearchInput = document.getElementById('studentSearchInput');
+    
+    // View Classes button
+    if (viewClassesBtn) {
+        viewClassesBtn.addEventListener('click', () => {
+            showClassesList();
+        });
+    }
     
     // Create Class button
     if (createClassBtn) {
@@ -1842,6 +1858,47 @@ function setupClassManagement() {
     if (backFromClassManagementBtn) {
         backFromClassManagementBtn.addEventListener('click', () => {
             showView('homeView');
+        });
+    }
+    
+    // Back from Classes List
+    if (backFromClassesListBtn) {
+        backFromClassesListBtn.addEventListener('click', () => {
+            showView('homeView');
+        });
+    }
+    
+    // Create Class from List
+    if (createClassFromListBtn) {
+        createClassFromListBtn.addEventListener('click', () => {
+            showView('createClassView');
+        });
+    }
+    
+    // Back from Add Student to Class
+    if (backFromAddStudentToClassBtn) {
+        backFromAddStudentToClassBtn.addEventListener('click', () => {
+            showView('homeView');
+        });
+    }
+    
+    // Class Selection
+    if (classSelection) {
+        classSelection.addEventListener('change', (e) => {
+            const classId = e.target.value;
+            if (classId) {
+                showAddStudentsToClass(classId);
+            } else {
+                document.getElementById('studentsSelectionSection').style.display = 'none';
+            }
+        });
+    }
+    
+    // Student Search
+    if (studentSearchInput) {
+        studentSearchInput.addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            filterAvailableStudents(searchTerm);
         });
     }
     
@@ -1989,6 +2046,159 @@ function removeStudentFromClass(classId, studentId) {
         const classObj = classManager.getClass(classId);
         renderClassStudents(classObj);
         showNotification('Student removed from class', 'success');
+    }
+}
+
+// Show Classes List
+function showClassesList() {
+    const classesList = document.getElementById('classesList');
+    const emptyClassesState = document.getElementById('emptyClassesState');
+    const classes = classManager.getAllClasses();
+    
+    if (classes.length === 0) {
+        classesList.style.display = 'none';
+        emptyClassesState.style.display = 'block';
+    } else {
+        classesList.style.display = 'grid';
+        emptyClassesState.style.display = 'none';
+        
+        classesList.innerHTML = classes.map(classObj => `
+            <div class="class-card" data-id="${classObj.id}">
+                <div class="class-card-header">
+                    <h3 class="class-card-title">${classObj.className}</h3>
+                    <div class="class-card-actions">
+                        <button class="class-card-action-btn" onclick="showClassManagement('${classObj.id}')">View</button>
+                        <button class="class-card-action-btn" onclick="showAddStudentsToClass('${classObj.id}')">Add Students</button>
+                        <button class="class-card-action-btn danger" onclick="deleteClass('${classObj.id}')">Delete</button>
+                    </div>
+                </div>
+                <div class="class-card-details">
+                    <div class="class-card-detail">
+                        <span class="class-card-detail-label">Section:</span>
+                        <span class="class-card-detail-value">${classObj.classSection}</span>
+                    </div>
+                    <div class="class-card-detail">
+                        <span class="class-card-detail-label">Teacher:</span>
+                        <span class="class-card-detail-value">${classObj.classTeacher || 'Not assigned'}</span>
+                    </div>
+                    <div class="class-card-detail">
+                        <span class="class-card-detail-label">Room:</span>
+                        <span class="class-card-detail-value">${classObj.classRoom || 'Not assigned'}</span>
+                    </div>
+                    <div class="class-card-detail">
+                        <span class="class-card-detail-label">Students:</span>
+                        <span class="class-card-detail-value">${classObj.students.length}</span>
+                    </div>
+                </div>
+                <div class="class-card-footer">
+                    <span class="class-student-count">${classObj.students.length} students</span>
+                    <span class="class-created-date">Created: ${new Date(classObj.createdAt).toLocaleDateString()}</span>
+                </div>
+            </div>
+        `).join('');
+    }
+    
+    showView('classesListView');
+}
+
+// Show Add Students to Class
+function showAddStudentsToClass(classId) {
+    const classObj = classManager.getClass(classId);
+    if (!classObj) return;
+    
+    // Update class selection dropdown
+    const classSelection = document.getElementById('classSelection');
+    const classes = classManager.getAllClasses();
+    
+    classSelection.innerHTML = '<option value="">Choose a class...</option>' +
+        classes.map(c => `<option value="${c.id}" ${c.id === classId ? 'selected' : ''}>${c.className} - ${c.classSection}</option>`).join('');
+    
+    // Show students selection section
+    document.getElementById('studentsSelectionSection').style.display = 'block';
+    
+    // Load available students
+    loadAvailableStudents(classId);
+    
+    showView('addStudentToClassView');
+}
+
+// Load Available Students
+function loadAvailableStudents(classId) {
+    const classObj = classManager.getClass(classId);
+    const allStudents = studentManager.getAllStudents();
+    const availableStudents = allStudents.filter(student => !classObj.students.includes(student.id));
+    
+    const availableStudentsList = document.getElementById('availableStudentsList');
+    
+    if (availableStudents.length === 0) {
+        availableStudentsList.innerHTML = `
+            <div style="text-align: center; padding: 3rem; color: var(--text-secondary); grid-column: 1/-1;">
+                <h3>No available students</h3>
+                <p>All students are already assigned to this class</p>
+            </div>
+        `;
+    } else {
+        availableStudentsList.innerHTML = availableStudents.map(student => `
+            <div class="student-card" data-id="${student.id}">
+                <div class="student-card-header">
+                    <div class="student-avatar">
+                        ${student.picture ? 
+                            `<img src="${student.picture}" alt="${student.firstName}">` : 
+                            `<span>${getInitials(student.firstName, student.lastName)}</span>`
+                        }
+                    </div>
+                    <div class="student-info">
+                        <h3>${student.firstName} ${student.lastName}</h3>
+                    </div>
+                    <button class="btn-primary btn-small" onclick="addStudentToClass('${classId}', '${student.id}')">
+                        Add to Class
+                    </button>
+                </div>
+                <div class="student-card-details">
+                    <div class="detail-row">
+                        <span>Roll No.</span>
+                        <span>${student.rollNo}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span>Class</span>
+                        <span>Class ${student.class} - ${student.section}</span>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
+}
+
+// Add Student to Class
+function addStudentToClass(classId, studentId) {
+    if (classManager.addStudentToClass(classId, studentId)) {
+        showNotification('Student added to class successfully!', 'success');
+        loadAvailableStudents(classId); // Refresh the list
+    } else {
+        showNotification('Failed to add student to class', 'error');
+    }
+}
+
+// Filter Available Students
+function filterAvailableStudents(searchTerm) {
+    const studentCards = document.querySelectorAll('#availableStudentsList .student-card');
+    studentCards.forEach(card => {
+        const studentName = card.querySelector('h3').textContent.toLowerCase();
+        if (studentName.includes(searchTerm)) {
+            card.style.display = 'block';
+        } else {
+            card.style.display = 'none';
+        }
+    });
+}
+
+// Delete Class
+function deleteClass(classId) {
+    const classObj = classManager.getClass(classId);
+    if (classObj && confirm(`Are you sure you want to delete "${classObj.className}"? This will remove all students from the class.`)) {
+        classManager.deleteClass(classId);
+        showNotification('Class deleted successfully', 'success');
+        showClassesList(); // Refresh the classes list
     }
 }
 

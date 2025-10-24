@@ -1860,4 +1860,184 @@ body {
     }
 }
 
+/* Classes List Styles */
+.classes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.class-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--border-color);
+    transition: all 0.2s ease;
+    cursor: pointer;
+    position: relative;
+}
+
+.class-card:hover {
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-2px);
+}
+
+.class-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+}
+
+.class-card-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.class-card-actions {
+    display: flex;
+    gap: 0.5rem;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.class-card:hover .class-card-actions {
+    opacity: 1;
+}
+
+.class-card-action-btn {
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 0.5rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    font-size: 0.875rem;
+}
+
+.class-card-action-btn:hover {
+    background: var(--primary-dark);
+}
+
+.class-card-action-btn.danger {
+    background: var(--error-color);
+}
+
+.class-card-action-btn.danger:hover {
+    background: #dc2626;
+}
+
+.class-card-details {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.class-card-detail {
+    font-size: 0.875rem;
+}
+
+.class-card-detail-label {
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.class-card-detail-value {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.class-card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.class-student-count {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.class-created-date {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+/* Class Selection Styles */
+.class-selection-section {
+    background: white;
+    border-radius: 12px;
+    padding: 2rem;
+    margin-bottom: : 2rem;
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--border-color);
+}
+
+.class-selection-section h3 {
+    margin: 0 0 1rem 0;
+    color: var(--text-primary);
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.form-select {
+    width: 100%;
+    padding: 0.75rem;
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 1rem;
+    background: white;
+    transition: border-color 0.2s ease;
+}
+
+.form-select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+}
+
+.students-selection-section {
+    background: white;
+    border-radius: 12px;
+    padding: 2rem;
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--border-color);
+}
+
+.students-selection-section h3 {
+    margin: 0 0 1.5rem 0;
+    color: var(--text-primary);
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+/* Responsive design for classes */
+@media (max-width: 768px) {
+    .classes-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .class-card-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+    
+    .class-card-actions {
+        opacity: 1;
+        align-self: flex-end;
+    }
+    
+    .class-card-details {
+        grid-template-columns: 1fr;
+    }
+}
+
 
