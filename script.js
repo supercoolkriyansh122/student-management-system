@@ -1942,10 +1942,6 @@ function showClassManagement(classId) {
     classInfoCard.innerHTML = `
         <div class="class-info-header">
             <h2 class="class-info-title">${classObj.className}</h2>
-            <div class="class-actions">
-                <button id="editClassBtn" class="btn-secondary">✏️ Edit Class</button>
-                <button id="printClassBtn" class="btn-secondary">🖨️ Print Class</button>
-            </div>
         </div>
         <div class="class-info-details">
             <div class="class-detail-item">
@@ -1979,16 +1975,28 @@ function showClassManagement(classId) {
     // Add event listeners for class actions
     const editClassBtn = document.getElementById('editClassBtn');
     const printClassBtn = document.getElementById('printClassBtn');
+    const addStudentToClassBtn = document.getElementById('addStudentToClassBtn');
     
+    // Remove existing event listeners to prevent duplicates
     if (editClassBtn) {
-        editClassBtn.addEventListener('click', () => {
+        editClassBtn.replaceWith(editClassBtn.cloneNode(true));
+        const newEditBtn = document.getElementById('editClassBtn');
+        newEditBtn.addEventListener('click', () => {
             showEditClass(classId);
         });
     }
     
     if (printClassBtn) {
-        printClassBtn.addEventListener('click', () => {
+        printClassBtn.replaceWith(printClassBtn.cloneNode(true));
+        const newPrintBtn = document.getElementById('printClassBtn');
+        newPrintBtn.addEventListener('click', () => {
             printClass(classId);
+        });
+    }
+    
+    if (addStudentToClassBtn) {
+        addStudentToClassBtn.addEventListener('click', () => {
+            showAddStudentsToClass(classId);
         });
     }
     
@@ -2190,6 +2198,30 @@ function filterAvailableStudents(searchTerm) {
             card.style.display = 'none';
         }
     });
+}
+
+// Show Edit Class
+function showEditClass(classId) {
+    const classObj = classManager.getClass(classId);
+    if (!classObj) return;
+    
+    // For now, show a simple edit form
+    const newClassName = prompt('Enter new class name:', classObj.className);
+    if (newClassName && newClassName.trim() !== '') {
+        const newClassTeacher = prompt('Enter class teacher:', classObj.classTeacher || '');
+        const newClassRoom = prompt('Enter room number:', classObj.classRoom || '');
+        const newClassDescription = prompt('Enter class description:', classObj.classDescription || '');
+        
+        classManager.updateClass(classId, {
+            className: newClassName.trim(),
+            classTeacher: newClassTeacher.trim(),
+            classRoom: newClassRoom.trim(),
+            classDescription: newClassDescription.trim()
+        });
+        
+        showNotification('Class updated successfully!', 'success');
+        showClassManagement(classId); // Refresh the view
+    }
 }
 
 // Delete Class
