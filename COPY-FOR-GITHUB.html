@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Copy Code for GitHub</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .file-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h2 {
+            color: #6366f1;
+            margin-top: 0;
+        }
+        .copy-btn {
+            background: #6366f1;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 0;
+        }
+        .copy-btn:hover {
+            background: #4f46e5;
+        }
+        .instructions {
+            background: #e0e7ff;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .instructions ol {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        .success {
+            background: #10b981;
+        }
+    </style>
+</head>
+<body>
+    <h1>📋 Copy Code for GitHub Deployment</h1>
+    
+    <div class="instructions">
+        <h3>🚀 How to Use:</h3>
+        <ol>
+            <li>Click "Copy to Clipboard" button for each file</li>
+            <li>Go to your GitHub repository</li>
+            <li>Click on the file (index.html, script.js, or styles.css)</li>
+            <li>Click the Edit button (pencil icon)</li>
+            <li>Select all old code and delete it</li>
+            <li>Paste the new code</li>
+            <li>Click "Commit changes"</li>
+            <li>Repeat for all three files</li>
+        </ol>
+    </div>
+
+    <div class="file-section">
+        <h2>1️⃣ index.html</h2>
+        <button class="copy-btn" onclick="copyFile('index.html')">📋 Copy index.html to Clipboard</button>
+        <p id="status-index"></p>
+    </div>
+
+    <div class="file-section">
+        <h2>2️⃣ script.js</h2>
+        <button class="copy-btn" onclick="copyFile('script.js')">📋 Copy script.js to Clipboard</button>
+        <p id="status-script"></p>
+    </div>
+
+    <div class="file-section">
+        <h2>3️⃣ styles.css</h2>
+        <button class="copy-btn" onclick="copyFile('styles.css')">📋 Copy styles.css to Clipboard</button>
+        <p id="status-styles"></p>
+    </div>
+
+    <script>
+        async function copyFile(filename) {
+            const statusId = 'status-' + filename.split('.')[0];
+            const statusElement = document.getElementById(statusId);
+            
+            try {
+                statusElement.textContent = 'Loading...';
+                statusElement.style.color = '#6366f1';
+                
+                const response = await fetch(filename);
+                const text = await response.text();
+                
+                await navigator.clipboard.writeText(text);
+                
+                statusElement.textContent = '✅ Copied! Now paste it into GitHub.';
+                statusElement.style.color = '#10b981';
+                statusElement.style.fontWeight = 'bold';
+                
+                setTimeout(() => {
+                    statusElement.textContent = '';
+                }, 5000);
+            } catch (error) {
+                statusElement.textContent = '❌ Error: ' + error.message;
+                statusElement.style.color = '#ef4444';
+            }
+        }
+    </script>
+</body>
+</html>
+

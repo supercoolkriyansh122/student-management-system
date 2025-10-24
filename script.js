@@ -220,7 +220,7 @@ async function renderStudentsList(filteredStudents = null) {
         if (students.length === 0) {
             studentsList.innerHTML = '';
             if (allStudents.length === 0) {
-                emptyState.classList.add('visible');
+            emptyState.classList.add('visible');
             } else {
                 // Show no results message
                 emptyState.classList.remove('visible');
@@ -634,6 +634,9 @@ function setupAddStudentForm() {
 
     if (!form || !pictureInput || !imagePreview || !dragDropZone) return;
 
+    // Initialize progress tracker for add student form
+    addProgressTracker = new ProgressTracker('add');
+
     // Drag and Drop handlers
     dragDropZone.addEventListener('click', () => {
         pictureInput.click();
@@ -673,19 +676,19 @@ function setupAddStudentForm() {
     });
 
     function handleImageFile(file) {
-        if (file.size > 5 * 1024 * 1024) { // 5MB limit
-            showNotification('Image size should be less than 5MB', 'error');
-            pictureInput.value = '';
-            return;
-        }
+            if (file.size > 5 * 1024 * 1024) { // 5MB limit
+                showNotification('Image size should be less than 5MB', 'error');
+                pictureInput.value = '';
+                return;
+            }
 
-        const reader = new FileReader();
-        reader.onload = function(e) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
             currentImageData = e.target.result;
             displayImagePreview(currentImageData);
             dragDropZone.classList.add('has-image');
-        };
-        reader.readAsDataURL(file);
+            };
+            reader.readAsDataURL(file);
     }
 
     function displayImagePreview(imageData) {
@@ -704,10 +707,10 @@ function setupAddStudentForm() {
     function removeImage() {
         currentImageData = null;
         pictureInput.value = '';
-        imagePreview.innerHTML = '';
-        imagePreview.classList.remove('visible');
+            imagePreview.innerHTML = '';
+            imagePreview.classList.remove('visible');
         dragDropZone.classList.remove('has-image');
-    }
+        }
 
     // Form submission
     form.addEventListener('submit', function(e) {
@@ -766,7 +769,7 @@ function setupAddStudentForm() {
         };
 
         // Save student
-        saveStudent(formData);
+                saveStudent(formData);
     });
 }
 
@@ -799,6 +802,11 @@ function resetAddStudentForm() {
     // Clear all error messages
     form.querySelectorAll('.error-message').forEach(el => el.textContent = '');
     form.querySelectorAll('input, select').forEach(el => el.classList.remove('error'));
+    
+    // Reset progress tracker
+    if (addProgressTracker) {
+        addProgressTracker.reset();
+    }
 }
 
 // Edit Student Form Handler
@@ -809,6 +817,9 @@ function setupEditStudentForm() {
     const dragDropZone = document.getElementById('editDragDropZone');
 
     if (!form || !pictureInput || !imagePreview || !dragDropZone) return;
+
+    // Initialize progress tracker for edit student form
+    editProgressTracker = new ProgressTracker('edit');
 
     // Drag and Drop handlers
     dragDropZone.addEventListener('click', () => {
@@ -976,6 +987,11 @@ function resetEditStudentForm() {
     // Clear all error messages
     form.querySelectorAll('.error-message').forEach(el => el.textContent = '');
     form.querySelectorAll('input, select').forEach(el => el.classList.remove('error'));
+    
+    // Reset progress tracker
+    if (editProgressTracker) {
+        editProgressTracker.reset();
+    }
 }
 
 // Data Management Functions
@@ -1722,14 +1738,133 @@ function resetAddUserForm() {
     }
 }
 
+// Progress Bar Management Functions
+class ProgressTracker {
+    constructor(formType) {
+        this.formType = formType; // 'add' or 'edit'
+        this.currentStep = 1;
+        this.totalSteps = 6;
+        this.progressFill = document.getElementById(`${formType}ProgressFill`);
+        this.progressText = document.getElementById(`${formType}ProgressText`);
+        this.steps = document.querySelectorAll(`#${formType}StudentView .step`);
+        
+        this.init();
+    }
+    
+    init() {
+        this.updateProgress();
+        this.setupFormListeners();
+    }
+    
+    setupFormListeners() {
+        const form = document.getElementById(`${this.formType}StudentForm`);
+        if (!form) return;
+        
+        // Listen to all form inputs for changes
+        const inputs = form.querySelectorAll('input, select');
+        inputs.forEach(input => {
+            input.addEventListener('input', () => this.calculateProgress());
+            input.addEventListener('change', () => this.calculateProgress());
+        });
+    }
+    
+    calculateProgress() {
+        const form = document.getElementById(`${this.formType}StudentForm`);
+        if (!form) return;
+        
+        let completedSteps = 0;
+        
+        // Step 1: Basic Info (First Name & Last Name)
+        const firstName = form.querySelector(`#${this.formType}FirstName`) || form.querySelector('#firstName');
+        const lastName = form.querySelector(`#${this.formType}LastName`) || form.querySelector('#lastName');
+        if (firstName?.value.trim() && lastName?.value.trim()) {
+            completedSteps = Math.max(completedSteps, 1);
+        }
+        
+        // Step 2: Profile Picture (Optional - always considered completed)
+        completedSteps = Math.max(completedSteps, 2);
+        
+        // Step 3: Roll Number & Admission Number
+        const rollNo = form.querySelector(`#${this.formType}RollNo`) || form.querySelector('#rollNo');
+        const admissionNo = form.querySelector(`#${this.formType}AdmissionNo`) || form.querySelector('#admissionNo');
+        if (rollNo?.value.trim() && admissionNo?.value.trim()) {
+            completedSteps = Math.max(completedSteps, 3);
+        }
+        
+        // Step 4: Class & Section
+        const classSelect = form.querySelector(`#${this.formType}Class`) || form.querySelector('#class');
+        const sectionSelect = form.querySelector(`#${this.formType}Section`) || form.querySelector('#section');
+        if (classSelect?.value && sectionSelect?.value) {
+            completedSteps = Math.max(completedSteps, 4);
+        }
+        
+        // Step 5: Date of Birth
+        const dob = form.querySelector(`#${this.formType}Dob`) || form.querySelector('#dob');
+        if (dob?.value) {
+            completedSteps = Math.max(completedSteps, 5);
+        }
+        
+        // Step 6: All required fields completed (review ready)
+        if (this.isFormComplete()) {
+            completedSteps = 6;
+        }
+        
+        this.currentStep = completedSteps;
+        this.updateProgress();
+    }
+    
+    isFormComplete() {
+        const form = document.getElementById(`${this.formType}StudentForm`);
+        if (!form) return false;
+        
+        const requiredFields = form.querySelectorAll('[required]');
+        return Array.from(requiredFields).every(field => field.value.trim() !== '');
+    }
+    
+    updateProgress() {
+        const percentage = (this.currentStep / this.totalSteps) * 100;
+        
+        // Update progress bar
+        if (this.progressFill) {
+            this.progressFill.style.width = `${percentage}%`;
+        }
+        
+        // Update progress text
+        if (this.progressText) {
+            this.progressText.textContent = `Step ${this.currentStep} of ${this.totalSteps}`;
+        }
+        
+        // Update step indicators
+        this.steps.forEach((step, index) => {
+            const stepNumber = index + 1;
+            step.classList.remove('active', 'completed');
+            
+            if (stepNumber < this.currentStep) {
+                step.classList.add('completed');
+            } else if (stepNumber === this.currentStep) {
+                step.classList.add('active');
+            }
+        });
+    }
+    
+    reset() {
+        this.currentStep = 1;
+        this.updateProgress();
+    }
+}
+
+// Global progress trackers
+let addProgressTracker = null;
+let editProgressTracker = null;
+
 // Initialize Application
 async function init() {
     try {
         setupLogin();
-        setupNavigation();
-        setupAddStudentForm();
+    setupNavigation();
+    setupAddStudentForm();
         setupEditStudentForm();
-        setupDataManagement();
+    setupDataManagement();
         setupSearchBar();
         setupFiltersAndSort();
         setupAttendance();
@@ -1737,7 +1872,7 @@ async function init() {
         
         // Only render if logged in
         if (authManager.isLoggedIn()) {
-            await renderStudentsList();
+    await renderStudentsList();
         }
     } catch (error) {
         console.error('Error during initialization:', error);

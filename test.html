@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Animation Test</title>
+    <style>
+        .test-box {
+            width: 200px;
+            height: 100px;
+            background: #6366f1;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 20px;
+            border-radius: 8px;
+            opacity: 0;
+            animation: fadeInUp 0.4s ease forwards;
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .slide-test {
+            width: 200px;
+            height: 100px;
+            background: #10b981;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 20px;
+            border-radius: 8px;
+            opacity: 0;
+            animation: slideInFromRight 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+            animation-delay: 0.5s;
+        }
+        
+        @keyframes slideInFromRight {
+            from {
+                opacity: 0;
+                transform: translateX(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Animation Test</h1>
+    <p>If you see animations below, your browser supports CSS animations:</p>
+    
+    <div class="test-box">Fade Up Animation</div>
+    <div class="slide-test">Slide In Animation</div>
+    
+    <script>
+        console.log("Test page loaded successfully!");
+        
+        // Test if animations are working
+        setTimeout(() => {
+            const boxes = document.querySelectorAll('.test-box, .slide-test');
+            boxes.forEach((box, index) => {
+                console.log(`Box ${index + 1} opacity:`, window.getComputedStyle(box).opacity);
+                console.log(`Box ${index + 1} transform:`, window.getComputedStyle(box).transform);
+            });
+        }, 1000);
+    </script>
+</body>
+</html>

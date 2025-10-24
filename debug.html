@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Test</title>
+    <style>
+        .btn-secondary {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            background: #f59e0b;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <h1>Debug Test</h1>
+    <button id="testAnimBtn" class="btn-secondary">🎬 Test Animations</button>
+    
+    <div id="result"></div>
+    
+    <script>
+        console.log('Debug page loaded');
+        
+        // Test if button exists
+        const testBtn = document.getElementById('testAnimBtn');
+        console.log('Button found:', testBtn);
+        
+        if (testBtn) {
+            testBtn.addEventListener('click', () => {
+                console.log('Button clicked!');
+                document.getElementById('result').innerHTML = '<h2 style="color: green;">✅ Button works! JavaScript is working!</h2>';
+            });
+        } else {
+            console.error('Button not found!');
+            document.getElementById('result').innerHTML = '<h2 style="color: red;">❌ Button not found!</h2>';
+        }
+    </script>
+</body>
+</html>
